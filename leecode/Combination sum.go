@@ -80,6 +80,7 @@ func combinationSum2(candidates []int, target int) [][]int {
 	return result
 }
 
+// prune
 func combinationSum3(candidates []int, target int) [][]int {
 	result := make([][]int, 0)
 	combination := make([]int, 0)
