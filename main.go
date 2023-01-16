@@ -178,9 +178,68 @@ func main() {
 		fmt.Println(data)
 	}
 
-	maxPosition := 5 //无限循环
-	for i := 1; i <= maxPosition; i++ {
-		maxPosition++
-		fmt.Println("========")
-	}
+	//maxPosition := 5 //无限循环
+	//for i := 1; i <= maxPosition; i++ {
+	//	maxPosition++
+	//	fmt.Println("========")
+	//}
+
+	h := man{}
+	h.speak()
+	h.sing()
+	//var j human = man{}
+	//j.speak()
+	//j.sing()
+
+	fmt.Println("================")
+	listnode := &ListNode{}
+	listnode.Next = &ListNode{}
+	fmt.Println(&listnode)
+	fmt.Println(listnode)
+	listnode = &ListNode{} // 会重新分配地址
+	listnode.Next = &ListNode{}
+	fmt.Println(&listnode)
+	fmt.Println(listnode)
+
+	fmt.Println("================")
+	listnode1 := new(ListNode)
+	listnode1.Next = new(ListNode)
+	fmt.Println(&listnode1)
+	fmt.Println(listnode1)
+	listnode1 = new(ListNode)
+	listnode1.Next = new(ListNode)
+	fmt.Println(&listnode1)
+	fmt.Println(listnode1)
+
+	fmt.Println("================")
+	var listnode2 *ListNode
+	listnode2.Next = new(ListNode)
+	fmt.Println(&listnode2)
+	fmt.Println(listnode2)
+	//var listnode2 *ListNode
+	listnode2.Next = new(ListNode)
+	fmt.Println(&listnode2)
+	fmt.Println(listnode2)
+}
+
+type ListNode struct {
+	Val  int
+	Next *ListNode
+}
+
+type human interface {
+	speak()
+	sing()
+}
+
+type man struct {
+	name string
+}
+
+func (m man) speak() {
+	fmt.Println("speaking")
+}
+
+func (m *man) sing() {
+	fmt.Println("singing")
 }

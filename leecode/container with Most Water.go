@@ -16,7 +16,26 @@ Notice that you may not slant the container.
 */
 
 func maxArea(height []int) int {
+	leftPointer, rightPointer := 0, len(height)-1
+	maxCapacity := 0
+	for (rightPointer - leftPointer) > 0 {
+		if height[leftPointer] < height[rightPointer] {
+			maxCapacity = max(maxCapacity, height[leftPointer]*(rightPointer-leftPointer))
+			leftPointer++
+		} else {
+			maxCapacity = max(maxCapacity, height[rightPointer]*(rightPointer-leftPointer))
+			rightPointer--
+		}
+	}
+	return maxCapacity
+}
 
+func max(value1 int, value2 int) int {
+	if value1 < value2 {
+		return value2
+	} else {
+		return value1
+	}
 }
 
 func main() {
