@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
-import "HanselNotes/leecode/util"
+import (
+	"fmt"
+	. "leecode/util"
+)
 
 /*
 Given the head of a linked list, rotate the list to the right by k places.
@@ -60,10 +62,7 @@ func main() {
 		node.Val = i
 	}
 	//rotateRight(preHead.Next, 2)
-	util.PrintfListNode(preHead.Next)
+	PrintfListNode(preHead.Next)
 	fmt.Println("-=======")
-	util.PrintfListNode(rotateRight(preHead.Next, 2))
-}
-
-
+	PrintfListNode(rotateRight(preHead.Next, 2))
 }

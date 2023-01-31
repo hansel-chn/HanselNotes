@@ -230,6 +230,7 @@ fmt.Println(string2) //aaaaaa
 
 但是使用range 存在语法糖,如下代码不是死循环
 `for_temp := range`和`len_temp := len(for_temp)`把长度和切片记录下来，所以：
+
 1. 不会死循环
 2. 打印`v[1]`为改动过后的值
 
@@ -243,16 +244,16 @@ func main() {
 	}
 }
 ```
+
 ## Goroutine栈空间无限大原因
+
 [http://dave.cheney.net/2013/06/02/why-is-a-goroutines-stack-infinite](http://dave.cheney.net/2013/06/02/why-is-a-goroutines-stack-infinite)
 
 [https://blog.csdn.net/weixin_52690231/article/details/124476954](https://blog.csdn.net/weixin_52690231/article/details/124476954)
 
 [swap交换内存主要是指当物理内存不够用时，系统会启用硬盘的一部分空间来充当服务器内存，而默认情况下swap内存会有一些设置标准，它与物理内存的大小也是有关系的](https://blog.csdn.net/Listen2You/article/details/108205275?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522167343982316800186555927%2522%252C%2522scm%2522%253A%252220140713.130102334.pc%255Fall.%2522%257D&request_id=167343982316800186555927&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~first_rank_ecpm_v1~rank_v31_ecpm-2-108205275-null-null.142^v70^control,201^v4^add_ask&utm_term=%E5%A0%86%E5%86%85%E5%AD%98%E6%89%A9%E5%AE%B9%E5%90%97&spm=1018.2226.3001.4187)
 
-
-这里好像还讲的是分段栈
-when new stack pages are needed, they are allocated from the heap.
+这里好像还讲的是分段栈 when new stack pages are needed, they are allocated from the heap.
 
 如果物理内存不足了，数据会在主存和磁盘之间频繁交换，命中率很低，性能出现急剧下降，我们称这种现象叫内存颠簸。这时你会发现系统的 swap 空间利用率开始增高， CPU 利用率中 iowait 占比开始增高。
 
@@ -260,18 +261,16 @@ when new stack pages are needed, they are allocated from the heap.
 
 [分段栈和连续栈](https://www.jianshu.com/p/7ec9acca6480)
 
-Go 1.4 开始使用的是连续栈，而这之前使用的分段栈。
-分段栈：分段栈是指开始时只有一个stack，当需要更多的 stack 时，就再去申请一个，然后将多个stack 之间用双向链接连接在一起。当使用完成后，再将无用的 stack 从链接中删除释放内存。
-连续栈：创建一个两倍于原stack大小的新stack，并将旧栈拷贝到其中
+Go 1.4 开始使用的是连续栈，而这之前使用的分段栈。 分段栈：分段栈是指开始时只有一个stack，当需要更多的 stack 时，就再去申请一个，然后将多个stack 之间用双向链接连接在一起。当使用完成后，再将无用的 stack
+从链接中删除释放内存。 连续栈：创建一个两倍于原stack大小的新stack，并将旧栈拷贝到其中
 
 ## 设计模式
+
 单例模式，工厂模式
 
 ## 指针接收者
 
-一个问题：
-值类型可被寻址可以调用指针接收者的方法，编译器会做`(&fv).pointerMethod()`的操作.
-那么问题来了，值类型不能寻址，比如函数返回值，其不能调用指针接收者方法，
+一个问题： 值类型可被寻址可以调用指针接收者的方法，编译器会做`(&fv).pointerMethod()`的操作. 那么问题来了，值类型不能寻址，比如函数返回值，其不能调用指针接收者方法，
 
 当指针接收者实现接口时，值类型不可寻址自然不能实现接口。但是，为什么<font color=LightCoral>即使golang值类型可被寻址也不能实现指针类型的接口</font>，
 
@@ -303,19 +302,68 @@ func (m *man) sing() {
 	fmt.Println("singing")
 }
 ```
+
 [指针接收者](https://stackoverflow.com/questions/38166925/why-cant-i-assign-types-value-to-an-interface-implementing-methods-with-receiv)
 
 ## How does GoLand of JetBrains find the implementations of interface?
-
 
 ## Dependency Inversion Principle, Dependency Injection (DI), Inversion of Control (IoC)
 
 [stackoverflow](https://stackoverflow.com/questions/6550700/inversion-of-control-vs-dependency-injection)
 
 ![IOC,DI,DIP关系](./ioc.png "IOC,DI,DIP关系")
-* Inversion of Control  思考java的ioc容器，对象的控制权上交ioc容器。原先A依赖B需要主动创建B,现在通过IOC容器将对象B注入对象A
-* Dependency Injection (DI)  依赖注入(DI)模式是IoC模式的一个更具体的版本，实现通过constructors/setters/Interface ，对象将“依赖”这些以正确地行为。
-* Dependency Inversion Principle   高级模块不应该依赖于低级模块。两者都应该依赖于抽象。抽象不应该依赖于细节。细节应该依赖于抽象。
 
+* Inversion of Control 思考java的ioc容器，对象的控制权上交ioc容器。原先A依赖B需要主动创建B,现在通过IOC容器将对象B注入对象A
+* Dependency Injection (DI)  依赖注入(DI)模式是IoC模式的一个更具体的版本，实现通过constructors/setters/Interface ，对象将“依赖”这些以正确地行为。
+* Dependency Inversion Principle 高级模块不应该依赖于低级模块。两者都应该依赖于抽象。抽象不应该依赖于细节。细节应该依赖于抽象。
 
 ## 逃逸分析
+
+## go 并发-锁与channel的选择
+
+[go 并发-锁与channel的选择](https://lessisbetter.site/2019/01/14/golang-channel-and-mutex/)
+
+channel底层牵扯到了锁
+
+* channel的核心是关注的是数据的流动 传递数据的所有，即把某个数据发送给其他协程,分发任务，每个任务都是一个数据
+  交流异步结果，结果是一个数据
+* mutex lock核心是关注公共的数据,mutex的能力是数据不动，某段时间只给一个协程访问数据的权限擅长数据位置固定的场景
+```go
+package main
+
+import "time"
+import "fmt"
+
+func producer(nums ...int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		time.Sleep(5 * time.Second)
+		for _, n := range nums {
+			time.Sleep(time.Second)
+			out <- n
+		}
+	}()
+	return out
+}
+func main() {
+	ch := producer(1, 2, 3, 4, 5, 6, 7, 8, 910)
+	for i2 := range ch {
+		fmt.Println(i2)
+	}
+	a := <-ch
+	fmt.Println(a)
+}
+```
+
+[通信共享内存的含义：](https://medium.com/@buzoumei/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E9%80%9A%E4%BF%A1%E6%9D%A5%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98-do-not-communicate-by-sharing-memory-instead-share-memory-by-communicating-5827bd3c4a77)
+通信共享内存的含义：
+不论通信模式，线程、协程最终都是从内存中获取数据，所以本质上都是通过共享内存来通信。
+
+“通信共享内存”，应该说是使用发消息来同步信息，而不是多个线程或者协程直接共享内存。
+
+发送消息是不同语言的高级抽象，实现这一机制时都会使用操作系统提供的锁机制来实现，共享内存也是使用锁这种并发机制实现的。
+
+更为高级和抽象的信息传递方式其实也只是对低抽象级别接口的组合和封装。
+
+Go的channel和Goroutine之间传递消息的方式内部实现时就广泛用到了共享内存和锁，通过对两者进行的组合提供了更高级别的同步机制。

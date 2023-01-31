@@ -56,7 +56,8 @@ graph LR;
   TableLevelLock(Table Level Lock) --> IntentionLock(Intention Lock)
 ```
 
-2. Shared and Exclusive Locks, Intention Locks,Record Locks, Gap Locks, Next-Key Locks, Insert Intention Locks, AUTO-INC Locks
+2. Shared and Exclusive Locks, Intention Locks,Record Locks, Gap Locks, Next-Key Locks, Insert Intention Locks, AUTO-INC
+   Locks
 
 > * 意向锁（Intention Lock）： <font color=LightCoral>（为了实现多粒度级别）</font> 在事务获得获得表中某行上的共享锁之前，必须先获得表上的IS锁或更强的锁；在事务获得表中某行上的排他锁之前，它必须首先获得表上的IX锁。（SELECT ... FOR UPDATE）
 > * 行锁（Record Lock）：锁定单个行记录的锁，防止其他事务对此行进行update和delete。在RC、RR隔离级别下都支持。
@@ -71,7 +72,7 @@ graph LR;
 
 4. InnoDB
 
->InnoDB 行锁是通过给索引上的索引项加锁来实现的，这一点 MySQL 与 Oracle 不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB 这种行锁实现的特点意味着：只有通过索引条件检索数据，InnoDB 才使用行级锁，否则，InnoDB 将使用表锁。在不通过索引条件查询的时候，InnoDB 确实使用的是表锁，而不是行锁。
+> InnoDB 行锁是通过给索引上的索引项加锁来实现的，这一点 MySQL 与 Oracle 不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB 这种行锁实现的特点意味着：只有通过索引条件检索数据，InnoDB 才使用行级锁，否则，InnoDB 将使用表锁。在不通过索引条件查询的时候，InnoDB 确实使用的是表锁，而不是行锁。
 
 [数据库锁讲解](https://blog.csdn.net/zcl_love_wx/article/details/81983267)
 
@@ -82,4 +83,22 @@ graph LR;
 * replace into
 * insert into \<table> on duplicate key update
 * temporary table update
-* update \<table\> set \<updateField> case \<> when \<> then \<> end where \<> in () 
+* update \<table\> set \<updateField> case \<> when \<> then \<> end where \<> in ()
+
+## SQL exists 原理
+
+* exists做为where条件时,是先对where 前的主查询询进行查询,然后用主查询的结果一个一个的代入exists的查询进行判断，如果为真则输出当前这一条主查询的结果，否则不输出。
+* 当子查询结果非常大时，EXISTS子句比IN快得多。相反，当子查询结果非常小时，IN子句比EXISTS快。 如果使用IN操作符，SQL引擎将扫描从内部查询中获取的所有记录。另一方面，如果我们使用EXISTS, SQL引擎将在找到匹配项后立即停止扫描过程。
+* [exists和in性能比较](https://blog.csdn.net/a_hui_tai_lang/article/details/81146635?spm=1001.2101.3001.6650.5&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-5-81146635-blog-108504594.pc_relevant_3mothn_strategy_and_data_recovery&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-5-81146635-blog-108504594.pc_relevant_3mothn_strategy_and_data_recovery&utm_relevant_index=10)
+* 
+* 实际上优化器可能做了优化
+
+## Mysql 小表驱动大表原因
+因为小表驱动大表，遍历小表，利用了大表的索引，时间为`records(small) * log(records(big))`比`records(big) * log(records(small))`快.
+驱动表索引没有生效，被驱动表索引有效
+
+## 多表连接的三种方式
+[多表连接的三种方式](https://www.sqlshack.com/internals-of-physical-join-operators-nested-loops-join-hash-match-join-merge-join-in-sql-server/)
+* hash join 构建哈希表首先对构建表的连接键值进行哈希，并根据哈希值将它们放置到一个或另一个桶中。然后QP开始处理探测端，它对探测值应用相同的哈希函数，确定桶并比较桶内的值。如果匹配，则返回该行。 [https://www.sqlshack.com/hash-join-execution-internals/](https://www.sqlshack.com/hash-join-execution-internals/)
+* merge join
+* nested loop

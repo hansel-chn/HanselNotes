@@ -1,15 +1,30 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	. "leecode/util"
+)
 
 /*
 Given the head of a sorted linked list, delete all nodes that have duplicate numbers,
 leaving only distinct numbers from the original list. Return the linked list sorted as well.
 */
 
-type ListNode struct {
-	Val  int
-	Next *ListNode
+func deleteDuplicatesII(head *ListNode) *ListNode {
+	preHead := &ListNode{Val: 0, Next: head}
+	cur := preHead
+	for cur.Next != nil && cur.Next.Next != nil {
+		if cur.Next.Val == cur.Next.Next.Val {
+			tmp := cur.Next.Next
+			for tmp.Next != nil && tmp.Val == tmp.Next.Val {
+				tmp = tmp.Next
+			}
+			cur.Next = tmp.Next
+		} else {
+			cur = cur.Next
+		}
+	}
+	return preHead.Next
 }
 
 func main() {
@@ -22,11 +37,6 @@ func main() {
 	ListNode1 := &ListNode{Val: 1, Next: ListNode2}
 
 	PrintfListNode(ListNode1)
-}
-
-func printfListNodeRe(node *ListNode) {
-	for nil != node {
-		fmt.Println(node.Val)
-		node = node.Next
-	}
+	fmt.Println("======")
+	PrintfListNode(deleteDuplicatesII(ListNode1))
 }

@@ -220,6 +220,7 @@ func main() {
 	listnode2.Next = new(ListNode)
 	fmt.Println(&listnode2)
 	fmt.Println(listnode2)
+
 }
 
 type ListNode struct {
