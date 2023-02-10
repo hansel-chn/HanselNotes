@@ -169,6 +169,8 @@ func main() {
 - A uintptr can be converted to a Pointer.
 - A Pointer can be converted to a uintptr 所以对指针操作需先转换为uintptr。
 
+## string不用扩容，因为go里string对象不可以改变
+
 ## golang string rune byte
 
 string实际上储存的是16位，八位地址八位长度
@@ -318,16 +320,22 @@ func (m *man) sing() {
 * Dependency Inversion Principle 高级模块不应该依赖于低级模块。两者都应该依赖于抽象。抽象不应该依赖于细节。细节应该依赖于抽象。
 
 ## 逃逸分析
-
+在编译原理中，分析指针动态范围的方法称之为逃逸分析。通俗来讲，当一个对象的指针被多个方法或线程引用时，我们称这个指针发生了逃逸。
+Go语言的逃逸分析是编译器执行静态代码分析后，对内存管理进行的优化和简化，它可以决定一个变量是分配到堆还栈上。
+1. 指针逃逸 指针逃逸应该是最容易理解的一种情况了，即在函数中创建了一个对象，返回了这个对象的指针。这种情况下，函数虽然退出了，但是因为指针的存在，对象的内存不能随着函数结束而回收，因此只能分配在堆上。 
+2. 栈空间不足 
+3. golang闭包
+4. 接口传参，不能确定类型，逃逸
+5. 
 ## go 并发-锁与channel的选择
 
 [go 并发-锁与channel的选择](https://lessisbetter.site/2019/01/14/golang-channel-and-mutex/)
 
 channel底层牵扯到了锁
 
-* channel的核心是关注的是数据的流动 传递数据的所有，即把某个数据发送给其他协程,分发任务，每个任务都是一个数据
-  交流异步结果，结果是一个数据
+* channel的核心是关注的是数据的流动 传递数据的所有，即把某个数据发送给其他协程,分发任务，每个任务都是一个数据 交流异步结果，结果是一个数据
 * mutex lock核心是关注公共的数据,mutex的能力是数据不动，某段时间只给一个协程访问数据的权限擅长数据位置固定的场景
+
 ```go
 package main
 
@@ -357,8 +365,7 @@ func main() {
 ```
 
 [通信共享内存的含义：](https://medium.com/@buzoumei/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E9%80%9A%E4%BF%A1%E6%9D%A5%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98-do-not-communicate-by-sharing-memory-instead-share-memory-by-communicating-5827bd3c4a77)
-通信共享内存的含义：
-不论通信模式，线程、协程最终都是从内存中获取数据，所以本质上都是通过共享内存来通信。
+通信共享内存的含义： 不论通信模式，线程、协程最终都是从内存中获取数据，所以本质上都是通过共享内存来通信。
 
 “通信共享内存”，应该说是使用发消息来同步信息，而不是多个线程或者协程直接共享内存。
 
@@ -367,3 +374,53 @@ func main() {
 更为高级和抽象的信息传递方式其实也只是对低抽象级别接口的组合和封装。
 
 Go的channel和Goroutine之间传递消息的方式内部实现时就广泛用到了共享内存和锁，通过对两者进行的组合提供了更高级别的同步机制。
+
+## go 并发问题(例如:string赋值不是原子操作)
+某个类型能不能赋值,关键是看,赋值能不能由一条机器指令完成
+
+[并发赋值检验](./tools/concurrency.go)
+
+[并发赋值](https://cloud.tencent.com/developer/article/1810536)
+
+## 左值和右值
+左值：可以将左值看作是一个关联了名称的内存位置，允许程序的其他部分来访问它。
+[左值和右值](https://www.zhihu.com/question/360636808)
+
+[How are rvalues in c++ stored in memory?](https://stackoverflow.com/questions/34221287/how-are-rvalues-in-c-stored-in-memory)
+[Where are rvalues stored in C++?](https://stackoverflow.com/questions/27841555/where-are-rvalues-stored-in-c)
+
+## golang原子操作(cas)和mutex lock
+[用户态到内核态的切换 in operatingSystem](../operatingSystem/operatingSystem.md#用户态到内核态的切换)
+
+[实例](./tools/mutex%20and%20%20atomic.go)
+优点：避免加互斥锁，可以提高程序的运行效率，
+缺点：ABA 问题，值未发生变化但是值在期间被修改过（解决方法添加版本号）；一般处理单个变量；高并发时影响效率，CAS自旋占用CPU资源
+[javaCAS](https://cloud.tencent.com/developer/article/1656853)
+
+ABA问题两类：
+- 1.由于内存重用（自动GC中不存在）导致的[比较并交换](https://zh.wikipedia.org/zh-cn/%E6%AF%94%E8%BE%83%E5%B9%B6%E4%BA%A4%E6%8D%A2)
+- 2.整体出现的问题（比如链表，地址没变但是指向的节点变了（内容变了），原本期望修改的不是这个节点的内容），`比如栈，ABA问题有什么影响呢？简单的理解，假设我们在实现一个无锁的栈，当前栈项的内容是A。一个线程要往里面原子性插入C，它用CAS操作来保证这种原子性，想当然地认为，只要当前的栈还是A，并且CAS是原子性的，就能保证整个操作的原子性。可是万万没想到，这期间另一个线程，push了一个B，又push了一个A。栈的内容就不是前面那个线程想象的样子了。(实际结果->A->B->A->C,期望结果->A->C->B->A)`,版本号解决
+- 如果项目只在乎数值是否正确，那么ABA问题不会影响程序并发的正确性(golang里面是`atomic.CompareAndSwapInt32`)。
+
+[这里的LOCK 称为 LOCK指令前缀，是用来设置CPU的 LOCK# 信号的。（译注：这个信号会使总线锁定，阻止其他处理器接管总线访问内存），直到使用LOCK前缀的指令执行结束，这会使这条指令的执行变为原子操作。在多处理器环境下，设置 LOCK# 信号能保证某个处理器对共享内存的独占使用。](https://blog.haohtml.com/archives/25881)
+
+[lock前缀是一个特殊的信号，执行过程如下：对总线和缓存上锁。
+强制所有lock信号之前的指令，都在此之前被执行，并同步相关缓存。
+执行lock后的指令（如cmpxchg）。
+释放对总线和缓存上的锁。
+强制所有lock信号之后的指令，都在此之后被执行，并同步相关缓存。](https://www.cnblogs.com/sunddenly/articles/14829255.html)
+
+[现在一般是采用“缓存锁定”的方案，避免降低内存的存取速度](https://dslztx.github.io/blog/2019/06/08/%E6%B1%87%E7%BC%96%E6%8C%87%E4%BB%A4%E7%9A%84LOCK%E6%8C%87%E4%BB%A4%E5%89%8D%E7%BC%80/)
+
+在x86 平台上，CPU提供了在指令执行期间对总线加锁的手段。CPU芯片上有一条引线#HLOCK pin，如果汇编语言的程序中在一条指令前面加上前缀"LOCK"，经过汇编以后的机器代码就使CPU在执行这条指令的时候把#HLOCK pin的电位拉低，持续到这条指令结束时放开，从而把总线锁住，这样同一总线上别的CPU就暂时不能通过总线访问内存了，保证了这条指令在多处理器环境中的原子性。
+当然，并不是所有的指令前面都可以加lock前缀的，只有ADD, ADC, AND, BTC, BTR, BTS, CMPXCHG,DEC, INC, NEG, NOT, OR, SBB, SUB, XOR, XADD, 和 XCHG指令前面可以加lock指令，实现原子操作。
+
+## 原子操作不进入内核态 x86下
+
+在进程A中通过系统调用sethostname(constchar *name,seze_t len)设置计算机在网络中的“主机名”.
+在该情景中我们势必涉及到从用户空间向内核空间传递数据的问题，name是用户空间中的地址，它要通过系统调用设置到内核中的某个地址中。让我们看看这个过程中的一些细节问题：系统调用的具体实现是将系统调用的参数依次存入寄存器ebx,ecx,edx,esi,edi（最多5个参数，该情景有两个 name和len），接着将系统调用号存入寄存器eax，然后通过中断指令“int 80”使进程A进入系统空间。由于进程的CPU运行级别小于等于为系统调用设置的陷阱门的准入级别3，所以可以畅通无阻的进入系统空间去执行为int80设置的函数指针system_call()。由于system_call()属于内核空间，其运行级别DPL为0，CPU要将堆栈切换到内核堆栈，即进程A的系统空间堆栈。我们知道内核为新建进程创建task_struct结构时，共分配了两个连续的页面，即8K的大小，并将底部约1k的大小用于 task_struct（如#definealloc_task_struct() ((struct task_struct *) __get_free_pages(GFP_KERNEL,1))）,而其余部分内存用于系统空间的堆栈空间，即当从用户空间转入系统空间时，堆栈指针 esp变成了（alloc_task_struct()+8192），这也是为什么系统空间通常用宏定义current（参看其实现）获取当前进程的 task_struct地址的原因。每次在进程从用户空间进入系统空间之初，系统堆栈就已经被依次压入用户堆栈SS、用户堆栈指针ESP、EFLAGS、用户空间CS、EIP，接着system_call()将eax压入，再接着调用SAVE_ALL依次压入ES、DS、EAX、EBP、EDI、ESI、 EDX、ECX、EBX，然后调用sys_call_table+4*%EAX，本情景为sys_sethostname()。
+
+[深入理解Linux内核进程上下文切换（讲的很好！）](https://cloud.tencent.com/developer/article/1710837)
+
+## Golang init顺序
+[Golang init顺序](https://cloud.tencent.com/developer/article/2138066#:~:text=%E5%A6%82%E6%9E%9C%E5%8C%85%E5%AD%98%E5%9C%A8%E4%BE%9D%E8%B5%96%EF%BC%8C%E4%B8%8D%E5%90%8C,%E7%9A%84init%20%E5%87%BD%E6%95%B0%E5%AE%8C%E6%88%90%E5%88%9D%E5%A7%8B%E5%8C%96%E3%80%82)

@@ -49,6 +49,23 @@ func isValidBST(root *TreeNode) bool {
 	return isValid
 }
 
+// 2023-2-8
+func isValidBST2(root *TreeNode) bool {
+	min := math.MinInt64
+	max := math.MaxInt64
+	var traversal func(node *TreeNode, max int, min int) bool
+	traversal = func(node *TreeNode, max int, min int) bool {
+		if nil == node {
+			return true
+		}
+		if node.Val >= max || node.Val <= min {
+			return false
+		}
+		return traversal(node.Left, node.Val, min) && traversal(node.Right, max, node.Val)
+	}
+	return traversal(root, max, min)
+}
+
 func main() {
 	//isValidBST()
 }
