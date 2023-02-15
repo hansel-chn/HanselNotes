@@ -265,6 +265,12 @@ func main() {
 
 Go 1.4 开始使用的是连续栈，而这之前使用的分段栈。 分段栈：分段栈是指开始时只有一个stack，当需要更多的 stack 时，就再去申请一个，然后将多个stack 之间用双向链接连接在一起。当使用完成后，再将无用的 stack
 从链接中删除释放内存。 连续栈：创建一个两倍于原stack大小的新stack，并将旧栈拷贝到其中
+> 与操作系统分段分页区分
+
+* golang 连续栈指的是一整块连续的空间，反而有点类似操作系统的分段；
+* golang 分段栈，指的是在运行时如果空间不足会创建新的栈空间，不同栈空间之间通过双向链表链接，反而有点类似分页；
+* 操作系统分段，指的是虚拟内存对应一整段连续的物理内存区域，问题是粒度不够细，某个时间段内程序只有一小部分被访问，浪费了空间，换入换出磁盘造成大量io操作，且换出后空间的内存空间可能并不连续，即使总和空闲内存空间大于所需内存，程序仍无法装在进内存
+* 操作系统分页，采用细粒度的方法，每个页占4kb空间，访问的页面不存在，就分配空间。页表基地址寄存器记录对应物理地址（空间不够，换入换出以页为单位，页面置换算法）
 
 ## 设计模式
 
@@ -313,20 +319,138 @@ func (m *man) sing() {
 
 [stackoverflow](https://stackoverflow.com/questions/6550700/inversion-of-control-vs-dependency-injection)
 
+[https://www.zhihu.com/question/521822847](https://www.zhihu.com/question/521822847)
+
+[https://www.jianshu.com/p/07af9dbbbc4b](https://www.jianshu.com/p/07af9dbbbc4b)
 ![IOC,DI,DIP关系](./ioc.png "IOC,DI,DIP关系")
 
 * Inversion of Control 思考java的ioc容器，对象的控制权上交ioc容器。原先A依赖B需要主动创建B,现在通过IOC容器将对象B注入对象A
 * Dependency Injection (DI)  依赖注入(DI)模式是IoC模式的一个更具体的版本，实现通过constructors/setters/Interface ，对象将“依赖”这些以正确地行为。
 * Dependency Inversion Principle 高级模块不应该依赖于低级模块。两者都应该依赖于抽象。抽象不应该依赖于细节。细节应该依赖于抽象。
 
+这就是依赖倒置原则——把原本的高层建筑依赖底层建筑“倒置”过来，变成底层建筑依赖高层建筑。高层建筑决定需要什么，底层去实现这样的需求，但是高层并不用管底层是怎么实现的。这样就不会出现前面的“牵一发动全身”的情况。 控制反转（Inversion of Control） 就是依赖倒置原则的一种代码设计的思路。具体采用的方法就是所谓的依赖注入（Dependency Injection）。
+
 ## 逃逸分析
-在编译原理中，分析指针动态范围的方法称之为逃逸分析。通俗来讲，当一个对象的指针被多个方法或线程引用时，我们称这个指针发生了逃逸。
-Go语言的逃逸分析是编译器执行静态代码分析后，对内存管理进行的优化和简化，它可以决定一个变量是分配到堆还栈上。
-1. 指针逃逸 指针逃逸应该是最容易理解的一种情况了，即在函数中创建了一个对象，返回了这个对象的指针。这种情况下，函数虽然退出了，但是因为指针的存在，对象的内存不能随着函数结束而回收，因此只能分配在堆上。 
+[https://cloud.tencent.com/developer/article/1861429](https://cloud.tencent.com/developer/article/1861429)
+[https://www.51cto.com/article/744432.html](https://www.51cto.com/article/744432.html)
+[https://juejin.cn/post/6898679464692187150](https://juejin.cn/post/6898679464692187150)
+[http://npat-efault.github.io/programming/2016/10/10/escape-analysis-and-interfaces.html](http://npat-efault.github.io/programming/2016/10/10/escape-analysis-and-interfaces.html)
+[https://forum.golangbridge.org/t/memory-allocation-difference-between-slice-and-array/18208](https://forum.golangbridge.org/t/memory-allocation-difference-between-slice-and-array/18208)
+[https://juejin.cn/post/7155815911755087908](https://juejin.cn/post/7155815911755087908)
+在编译原理中，分析指针动态范围的方法称之为逃逸分析。通俗来讲，当一个对象的指针被多个方法或线程引用时，我们称这个指针发生了逃逸。 Go语言的逃逸分析是编译器执行静态代码分析后，对内存管理进行的优化和简化，它可以决定一个变量是分配到堆还栈上。
+
+1. 指针逃逸 指针逃逸应该是最容易理解的一种情况了，即在函数中创建了一个对象，返回了这个对象的指针。这种情况下，函数虽然退出了，但是因为指针的存在，对象的内存不能随着函数结束而回收，因此只能分配在堆上。
 2. 栈空间不足 
-3. golang闭包
-4. 接口传参，不能确定类型，逃逸
-5. 
+3. 接口传参，不能确定类型，（interface）逃逸
+```go
+package main
+
+import "fmt"
+
+var VP *int // a global pointer
+
+func f(vp *int) {
+    VP = vp
+}
+
+func g() {
+    var v int // a local variable
+    v = 40
+    f(&v) // 内存逃逸，否则出现悬挂指针
+    *VP = 42
+    fmt.Println(v) // prints 42
+}
+
+func main() {
+    g()
+    fmt.Println(*VP) //prints 42
+}
+```
+4. 变量占用内存较大
+5. 编译期间不能确定变量大小
+```go
+package main
+
+func test() {
+	l := 1
+	a := make([]int, l, l) // 编译期间不能确定l的值，会发生内存逃逸,array 10mb逃逸，切片64kb逃逸
+	for i := 0; i < l; i++ {
+		a[i] = i
+	}
+}
+
+func main() {
+	test()
+}
+```
+
+```go
+package main
+
+func test() {
+	//l := 1
+	//a := make([]int, 1, 1)
+	//for i := 0; i < l; i++ {
+	//	a[i] = i
+	//}
+
+	//fmt.Println(a)
+	//fmt.Println(len(a))
+	//fmt.Println(cap(a))
+	//fmt.Println(strings.Repeat("*",10))
+	//fmt.Printf("%p\n",a)
+	//fmt.Println(&a[0])
+	//fmt.Printf("%p\n",&a)
+	////fmt.Printf("%v\n", unsafe.Pointer(uintptr(unsafe.Pointer(&a))+8))
+	//fmt.Printf("%x\n", *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&a)))))
+	//fmt.Printf("%v\n", *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&a))+8)))
+	//fmt.Printf("%v\n", *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&a))+16)))
+	//fmt.Printf("%v\n", unsafe.Pointer(uintptr(unsafe.Pointer(&a))+24))
+	//fmt.Println(strings.Repeat("=",10))
+
+	//fmt.Printf("%p\n", unsafe.Pointer(a)+16) // 错误，a不是指针，但是fmt.Printf("%p\n",a)输出做了处理
+	//fmt.Printf("%p\n",uintptr(a))
+	//
+	//// 扩容 fmt 传参接口类型，使用fmt，内存逃逸,这样写代码没什么意义，看不到具体怎么分配的
+	//a = append(a, 2)
+	//fmt.Println(a)
+	//fmt.Println(len(a))
+	//fmt.Println(cap(a))
+	//fmt.Println(strings.Repeat("*",10))
+	//fmt.Printf("%p\n",a)
+	//fmt.Println(&a[0])
+	//fmt.Printf("%p\n",&a)
+	////fmt.Printf("%v\n", unsafe.Pointer(uintptr(unsafe.Pointer(&a))+8))
+	//fmt.Printf("%x\n", *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&a)))))
+	//fmt.Printf("%v\n", *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&a))+8)))
+	//fmt.Printf("%v\n", *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&a))+16)))
+	//fmt.Println(strings.Repeat("=",10))
+
+	// 分配到堆和栈上
+	a := make([]int, 1, 65536)
+	b := make([]int, 1, 1)
+	//b := make([]int, 1, l)
+	a[0] = 1
+	b[0] = 1
+	//fmt.Printf("%p\n",&a[0])// 0xc000180000
+	//fmt.Printf("%p\n",&b[0]) // 0xc00001a098
+	//编译期间不能确定l的值，会发生内存逃逸,array 10mb逃逸，切片64kb逃逸
+
+	//slice底层数组由于append操作超过了它的容量，它会重新分片内存。如果在编译时期知道切片的初始大小，则它会在栈上分配。
+	//如果切片的底层存储必须被扩展，数据在运行时才获取到。则它将在堆上分配。
+	//https://juejin.cn/post/6844903921568186376
+}
+
+func main() {
+	test()
+	//其次，栈是连续分配内存的，如果给一个数组或对象分配内存，栈会选择还没分配的最小的内存地址给数组，
+	//在这个内存块中，数组中的元素从低地址到高地址依次分配（不要和栈的从高到低弄混了）。
+	//所以数组中第一个元素的其实地址对应于已分配栈的最低地址。
+}
+
+```
+6. golang闭包
+
 ## go 并发-锁与channel的选择
 
 [go 并发-锁与channel的选择](https://lessisbetter.site/2019/01/14/golang-channel-and-mutex/)
@@ -375,7 +499,34 @@ func main() {
 
 Go的channel和Goroutine之间传递消息的方式内部实现时就广泛用到了共享内存和锁，通过对两者进行的组合提供了更高级别的同步机制。
 
+[channel为nil的作用](https://medium.com/justforfunc/why-are-there-nil-channels-in-go-9877cc0b2308)
+比如两个通道值合并，采取`select case`的方式赋给新通道。如果一个通道关闭，`select case`仍然可以取到关闭通道的类型的零值，如`chan int`为0，若此时另一个通道阻塞，会浪费cpu资源。将关闭的通道赋予nil值，通道会阻塞，，就不会执行`case`后语句。
+
+> 为什么nil通道会被阻塞
+
+代码方面，
+```
+//在 src/runtime/chan.go中
+func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
+ if c == nil {
+      // 不能阻塞，直接返回 false，表示未发送成功
+      if !block {
+        return false
+      }
+      gopark(nil, nil, waitReasonChanSendNilChan, traceEvGoStop, 2)
+      throw("unreachable")
+ }
+  // 省略其他逻辑
+}
+```
+* channel缓冲区的大小不是类型声明的一部分
+* 如果通道未被初始化，缓冲区大小将为0
+* 缓冲区为0，通道无缓冲功能
+* 通道无缓冲功能，发送将会被阻塞且等待接收
+* 通道为nil，发送方和接收方无参考关系，他们都各自被阻塞
+
 ## go 并发问题(例如:string赋值不是原子操作)
+
 某个类型能不能赋值,关键是看,赋值能不能由一条机器指令完成
 
 [并发赋值检验](./tools/concurrency.go)
@@ -383,6 +534,7 @@ Go的channel和Goroutine之间传递消息的方式内部实现时就广泛用�
 [并发赋值](https://cloud.tencent.com/developer/article/1810536)
 
 ## 左值和右值
+
 左值：可以将左值看作是一个关联了名称的内存位置，允许程序的其他部分来访问它。
 [左值和右值](https://www.zhihu.com/question/360636808)
 
@@ -390,37 +542,104 @@ Go的channel和Goroutine之间传递消息的方式内部实现时就广泛用�
 [Where are rvalues stored in C++?](https://stackoverflow.com/questions/27841555/where-are-rvalues-stored-in-c)
 
 ## golang原子操作(cas)和mutex lock
+
 [用户态到内核态的切换 in operatingSystem](../operatingSystem/operatingSystem.md#用户态到内核态的切换)
 
 [实例](./tools/mutex%20and%20%20atomic.go)
-优点：避免加互斥锁，可以提高程序的运行效率，
-缺点：ABA 问题，值未发生变化但是值在期间被修改过（解决方法添加版本号）；一般处理单个变量；高并发时影响效率，CAS自旋占用CPU资源
+优点：避免加互斥锁，可以提高程序的运行效率， 缺点：ABA 问题，值未发生变化但是值在期间被修改过（解决方法添加版本号）；一般处理单个变量；高并发时影响效率，CAS自旋占用CPU资源
 [javaCAS](https://cloud.tencent.com/developer/article/1656853)
 
 ABA问题两类：
+
 - 1.由于内存重用（自动GC中不存在）导致的[比较并交换](https://zh.wikipedia.org/zh-cn/%E6%AF%94%E8%BE%83%E5%B9%B6%E4%BA%A4%E6%8D%A2)
-- 2.整体出现的问题（比如链表，地址没变但是指向的节点变了（内容变了），原本期望修改的不是这个节点的内容），`比如栈，ABA问题有什么影响呢？简单的理解，假设我们在实现一个无锁的栈，当前栈项的内容是A。一个线程要往里面原子性插入C，它用CAS操作来保证这种原子性，想当然地认为，只要当前的栈还是A，并且CAS是原子性的，就能保证整个操作的原子性。可是万万没想到，这期间另一个线程，push了一个B，又push了一个A。栈的内容就不是前面那个线程想象的样子了。(实际结果->A->B->A->C,期望结果->A->C->B->A)`,版本号解决
+-
+2.整体出现的问题（比如链表，地址没变但是指向的节点变了（内容变了），原本期望修改的不是这个节点的内容），`比如栈，ABA问题有什么影响呢？简单的理解，假设我们在实现一个无锁的栈，当前栈项的内容是A。一个线程要往里面原子性插入C，它用CAS操作来保证这种原子性，想当然地认为，只要当前的栈还是A，并且CAS是原子性的，就能保证整个操作的原子性。可是万万没想到，这期间另一个线程，push了一个B，又push了一个A。栈的内容就不是前面那个线程想象的样子了。(实际结果->A->B->A->C,期望结果->A->C->B->A)`
+,版本号解决
 - 如果项目只在乎数值是否正确，那么ABA问题不会影响程序并发的正确性(golang里面是`atomic.CompareAndSwapInt32`)。
 
 [这里的LOCK 称为 LOCK指令前缀，是用来设置CPU的 LOCK# 信号的。（译注：这个信号会使总线锁定，阻止其他处理器接管总线访问内存），直到使用LOCK前缀的指令执行结束，这会使这条指令的执行变为原子操作。在多处理器环境下，设置 LOCK# 信号能保证某个处理器对共享内存的独占使用。](https://blog.haohtml.com/archives/25881)
 
-[lock前缀是一个特殊的信号，执行过程如下：对总线和缓存上锁。
-强制所有lock信号之前的指令，都在此之前被执行，并同步相关缓存。
-执行lock后的指令（如cmpxchg）。
-释放对总线和缓存上的锁。
-强制所有lock信号之后的指令，都在此之后被执行，并同步相关缓存。](https://www.cnblogs.com/sunddenly/articles/14829255.html)
+[lock前缀是一个特殊的信号，执行过程如下：对总线和缓存上锁。 强制所有lock信号之前的指令，都在此之前被执行，并同步相关缓存。 执行lock后的指令（如cmpxchg）。 释放对总线和缓存上的锁。 强制所有lock信号之后的指令，都在此之后被执行，并同步相关缓存。](https://www.cnblogs.com/sunddenly/articles/14829255.html)
 
 [现在一般是采用“缓存锁定”的方案，避免降低内存的存取速度](https://dslztx.github.io/blog/2019/06/08/%E6%B1%87%E7%BC%96%E6%8C%87%E4%BB%A4%E7%9A%84LOCK%E6%8C%87%E4%BB%A4%E5%89%8D%E7%BC%80/)
 
-在x86 平台上，CPU提供了在指令执行期间对总线加锁的手段。CPU芯片上有一条引线#HLOCK pin，如果汇编语言的程序中在一条指令前面加上前缀"LOCK"，经过汇编以后的机器代码就使CPU在执行这条指令的时候把#HLOCK pin的电位拉低，持续到这条指令结束时放开，从而把总线锁住，这样同一总线上别的CPU就暂时不能通过总线访问内存了，保证了这条指令在多处理器环境中的原子性。
-当然，并不是所有的指令前面都可以加lock前缀的，只有ADD, ADC, AND, BTC, BTR, BTS, CMPXCHG,DEC, INC, NEG, NOT, OR, SBB, SUB, XOR, XADD, 和 XCHG指令前面可以加lock指令，实现原子操作。
+在x86 平台上，CPU提供了在指令执行期间对总线加锁的手段。CPU芯片上有一条引线#HLOCK pin，如果汇编语言的程序中在一条指令前面加上前缀"LOCK"，经过汇编以后的机器代码就使CPU在执行这条指令的时候把#HLOCK
+pin的电位拉低，持续到这条指令结束时放开，从而把总线锁住，这样同一总线上别的CPU就暂时不能通过总线访问内存了，保证了这条指令在多处理器环境中的原子性。 当然，并不是所有的指令前面都可以加lock前缀的，只有ADD, ADC, AND,
+BTC, BTR, BTS, CMPXCHG,DEC, INC, NEG, NOT, OR, SBB, SUB, XOR, XADD, 和 XCHG指令前面可以加lock指令，实现原子操作。
 
 ## 原子操作不进入内核态 x86下
 
 在进程A中通过系统调用sethostname(constchar *name,seze_t len)设置计算机在网络中的“主机名”.
-在该情景中我们势必涉及到从用户空间向内核空间传递数据的问题，name是用户空间中的地址，它要通过系统调用设置到内核中的某个地址中。让我们看看这个过程中的一些细节问题：系统调用的具体实现是将系统调用的参数依次存入寄存器ebx,ecx,edx,esi,edi（最多5个参数，该情景有两个 name和len），接着将系统调用号存入寄存器eax，然后通过中断指令“int 80”使进程A进入系统空间。由于进程的CPU运行级别小于等于为系统调用设置的陷阱门的准入级别3，所以可以畅通无阻的进入系统空间去执行为int80设置的函数指针system_call()。由于system_call()属于内核空间，其运行级别DPL为0，CPU要将堆栈切换到内核堆栈，即进程A的系统空间堆栈。我们知道内核为新建进程创建task_struct结构时，共分配了两个连续的页面，即8K的大小，并将底部约1k的大小用于 task_struct（如#definealloc_task_struct() ((struct task_struct *) __get_free_pages(GFP_KERNEL,1))）,而其余部分内存用于系统空间的堆栈空间，即当从用户空间转入系统空间时，堆栈指针 esp变成了（alloc_task_struct()+8192），这也是为什么系统空间通常用宏定义current（参看其实现）获取当前进程的 task_struct地址的原因。每次在进程从用户空间进入系统空间之初，系统堆栈就已经被依次压入用户堆栈SS、用户堆栈指针ESP、EFLAGS、用户空间CS、EIP，接着system_call()将eax压入，再接着调用SAVE_ALL依次压入ES、DS、EAX、EBP、EDI、ESI、 EDX、ECX、EBX，然后调用sys_call_table+4*%EAX，本情景为sys_sethostname()。
+在该情景中我们势必涉及到从用户空间向内核空间传递数据的问题，name是用户空间中的地址，它要通过系统调用设置到内核中的某个地址中。让我们看看这个过程中的一些细节问题：系统调用的具体实现是将系统调用的参数依次存入寄存器ebx,ecx,edx,esi,edi（最多5个参数，该情景有两个
+name和len），接着将系统调用号存入寄存器eax，然后通过中断指令“int
+80”使进程A进入系统空间。由于进程的CPU运行级别小于等于为系统调用设置的陷阱门的准入级别3，所以可以畅通无阻的进入系统空间去执行为int80设置的函数指针system_call()。由于system_call()
+属于内核空间，其运行级别DPL为0，CPU要将堆栈切换到内核堆栈，即进程A的系统空间堆栈。我们知道内核为新建进程创建task_struct结构时，共分配了两个连续的页面，即8K的大小，并将底部约1k的大小用于
+task_struct（如#definealloc_task_struct() ((struct task_struct *) __get_free_pages(GFP_KERNEL,1))
+）,而其余部分内存用于系统空间的堆栈空间，即当从用户空间转入系统空间时，堆栈指针 esp变成了（alloc_task_struct()+8192），这也是为什么系统空间通常用宏定义current（参看其实现）获取当前进程的
+task_struct地址的原因。每次在进程从用户空间进入系统空间之初，系统堆栈就已经被依次压入用户堆栈SS、用户堆栈指针ESP、EFLAGS、用户空间CS、EIP，接着system_call()
+将eax压入，再接着调用SAVE_ALL依次压入ES、DS、EAX、EBP、EDI、ESI、 EDX、ECX、EBX，然后调用sys_call_table+4*%EAX，本情景为sys_sethostname()。
 
 [深入理解Linux内核进程上下文切换（讲的很好！）](https://cloud.tencent.com/developer/article/1710837)
 
 ## Golang init顺序
+
 [Golang init顺序](https://cloud.tencent.com/developer/article/2138066#:~:text=%E5%A6%82%E6%9E%9C%E5%8C%85%E5%AD%98%E5%9C%A8%E4%BE%9D%E8%B5%96%EF%BC%8C%E4%B8%8D%E5%90%8C,%E7%9A%84init%20%E5%87%BD%E6%95%B0%E5%AE%8C%E6%88%90%E5%88%9D%E5%A7%8B%E5%8C%96%E3%80%82)
+
+## 微服务
+
+> 微服务的注册与调度 一个应用拆分成多个服务，多个服务之间应该怎样联系。
+
+1. 简单的方式就是使用nginx代理，问题是只能使用静态配置服务器实现负载均衡，对服务存活的感知和动态增删服务支持不完善，对企业总线压力大
+2. 注册调度服务：各服务提供服务状态API，各服务器主动上报或者注册调度服务定时采集（注册中心可以由如zookeeper实现）
+    * 中心化的注册与调度（类似nginx）；
+    * 独立注册服务，采用中心注册服务，中心拥有最新路由表，各服务侧实现负载均衡（服务实例和调度未分开）
+    * Service Mesh 将服务实例和调度分开，注册调度由组件实现
+      ![img.png](img.png)
+    * 每个服务机器上都部署一个 Proxy 模式的 etcd，这样就可以确保能访问 etcd 集群的服务都能互相连接。
+
+> etcd
+
+如果对读处理没有限制，有可能因为时间差导致follower状态落后，导致读不一致
+可以通过`readindex`机制实现线性一致读
+与zookeeper类似
+
+1. 与传统数据库的区别 
+* 存储的一般是控制平台的数据
+* MySQL 只保证最终一致性 eventual consistency（而且是不可配置的），因为它采用的是异步复制
+* 通常不会是一些内容数据比如文本信息，更多的存储一些不经常更新状态的相对少量几个G左右的控制数据。
+
+3. 与zookeeper区别：采用的一致性算法不同
+[Paxos算法与Zookeeper分析,zab (zk)raft协议(etcd) 8. 与Galera及MySQL Group replication的比较](https://www.cnblogs.com/williamjie/p/11137165.html)
+
+4. 与redis的区别
+* 都支持键值存储 
+* redis主从异步复制，数据丢失，不适合做注册和发现；etcd基于raft协议，不同节点数据一致，数据不丢
+* redis与etcd相比没有watch
+* redis 注册和发现如果采用redis的发布和订阅来做，网络出现问题收不到不会重复通知（不清楚）
+
+> rpc(grpc)和http
+
+不是一个层面的东西。http是一种通信协议格式，rpc是一种通讯方式。rpc可以采用诸如http协议或者自定义的tcp协议。rpc是面向于服务更高级的封装，包括服务发现，负载均衡熔断等。
+* 使用http协议的优势是通用，主流的网页浏览支持http协议。http协议适用于大包通讯，对延迟要求不高，无需维持长连接。
+* 自定义的二进制协议优势是低延迟，小包通讯，频率高，业务层长连接，如moba游戏。与自定义协议相比，http1.1协议编码效率低（报头采用文本编码，导致报文中有效字节少），不适用于后端进程之间的通信。所以，grpc采用了http2.0协议格式，优化了编码效率
+
+## golang使用值传递还是指针
+[golang使用值传递还是指针](https://hedzr.com/golang/pointer/go-pointer/)
+
+## golang nil
+nil是预定义的标识符，代表指针、通道、函数、接口、映射或切片的零值，也就是预定义好的一个变量：
+```
+type Type int
+var nil Type
+```
+
+
+## golang内存分配
+1. golang在程序启动的时候会向操作系统申请一大块内存，由go自己管理
+2. golang申请到的内存会分为三个区域，span，bitmap和arena，arena由8kb大小的页组成，span中存放着页的地址，bitmap每个字节分为两部分，每部分4个bit，标识arena中的页是否有指针，是否被GC标记
+3. golang基本的内存管理单元是mspan，go设置了多种不同大小，size的object，对应不同种类的mspan。mspan内部sizeclass决定了mspan分配页的个数
+4. go有三个内存管理组件，mcache，mcentral和mheap
+5. mcache存放着不同种类的mspan，根据需求给线程分配资源，如果没有会动态的向mcentral申请。这个在协程内部不存在竞争
+6. mcentral多个协程共享，需要消耗锁，mcentral有多个对应不同大小的mspan，每个central中存放着已分配和未分配的mspan
+7. 如果mcentral中的mspan被分配完，向mheap中申请，如内存消耗完会向操作系统申请新内存，mheap用于大对象内存的分配，mheap将内存分割为不同大小的object（mspan）
+8. 极小对象会被tiny分配器分配到一个object中。比如classsize的前几个，被分配了一个页，object大小很小，一个mspan可分配多个object

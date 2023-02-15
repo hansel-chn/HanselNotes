@@ -63,3 +63,6 @@ tracert命令用于调查与目的主机通信的所有经过的地址，跟ping
 然后 CA 会使用自己的私钥将该 Hash 值加密，生成 Certificate Signature，也就是 CA 对证书做了签名；
 
 最后将 Certificate Signature 添加在文件证书上，形成数字证书；
+
+
+## tcp和udp连接问题
