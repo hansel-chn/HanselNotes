@@ -12,6 +12,7 @@ import . "leecode/util"
  *     Right *TreeNode
  * }
  */
+// 递归表示
 func levelOrder(root *TreeNode) [][]int {
 	rlt := make([][]int, 0)
 	var traversal func(node *TreeNode, idx int)
@@ -29,3 +30,9 @@ func levelOrder(root *TreeNode) [][]int {
 	traversal(root, 0)
 	return rlt
 }
+
+//// 迭代表示
+//func levelOrderRecursion(root *TreeNode) [][]int {
+//	rlt := make([][]int, 0)
+//
+//}

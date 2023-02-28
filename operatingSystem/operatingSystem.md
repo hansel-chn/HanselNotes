@@ -65,11 +65,32 @@ pgd（Page global directory）:页全局目录的虚拟地址 pcb（process cont
 ![img.png](img.png)
 
 [地址空间的切换](https://cloud.tencent.com/developer/article/1710837)
+[这个讲的很好 mmu tlb 页表基地址寄存器](https://cloud.tencent.com/developer/article/1857523)
 页表基地址寄存器内存放的是当前执行进程的页全局目录的物理地址，所以访问自己的一套页表，拿到的是属于自己的物理地址（实际上，进程是访问虚拟地址空间的指令数据的时候不断发生缺页异常，然后缺页异常处理程序为进程分配实际的物理页，然后将页帧号和页表属性填入自己的页表条目中），就不会访问其他进程的指令和数据，这也是为何多个进程可以访问相同的虚拟地址而不会出现差错的原因，而且做到的各个地址空间的隔离互不影响（共享内存除外）。
 
 pgd虚拟地址转化为物理地址存放在ttbr0_el1中，这是用户空间的页表基址寄存器，当访问用户空间地址的时候mmu会通过这个寄存器来做遍历页表获得物理地址（ttbr1_el1是内核空间的页表基址寄存器，访问内核空间地址时使用，所有进程共享，不需要切换）。完成了这一步，也就完成了进程的地址空间切换，确切的说是进程的虚拟地址空间切换。
 
 试想如果进程想要访问一个用户空间虚拟地址，cpu的mmu所做的工作，就是从页表基址寄存器拿到页全局目录的物理基地址，然后和虚拟地址配合来查查找页表，最终找到物理地址进行访问
+
+> 进程控制块PCB （进程描述符），linux对应以下结构（截取）
+```
+struct task_struct {
+    // 进程状态
+    long              state;
+    // 虚拟内存结构体
+    struct mm_struct  *mm;
+    // 进程号
+    pid_t             pid;
+    // 指向父进程的指针
+    struct task_struct __rcu  *parent;
+    // 子进程列表
+    struct list_head        children;
+    // 存放文件系统信息的指针
+    struct fs_struct        *fs;
+    // 一个数组，包含该进程打开的文件指针
+    struct files_struct     *files;
+};
+```
 
 ![img_1.png](img_1.png)
 
@@ -78,3 +99,42 @@ bss：block start by symbol
 
 [线程切换](https://www.zhihu.com/question/323415592)
 [线程切换](https://zhuanlan.zhihu.com/p/352707156)
+
+## 文件描述符表，文件表，innodes表（节点表）
+
+## poll epoll select
+[https://imageslr.com/2020/02/27/select-poll-epoll.html](https://imageslr.com/2020/02/27/select-poll-epoll.html)
+[https://juejin.cn/post/6881596144963551245](https://juejin.cn/post/6881596144963551245)
+
+> epoll怎么解决性能开销大的问题
+
+通过回调函数的方式在，
+
+> epoll原理
+[https://developer.aliyun.com/article/1097552](https://developer.aliyun.com/article/1097552)
+* epoll_create先创建一个epoll实例，返回一个指向该实例的文件描述符。这个epoll实例内部存储了一个红黑树和双向链表，红黑树包括了所有待监听的文件描述符，双向链表存储了事件就绪的文件描述符。
+* epoll_ctl（control缩写ctl，功能有点像select中 fdset的几个api（添加要监听的文件描述符））将待监听的文件描述符加入epoll实例的监听列表中，当事件准备就绪，中断程序将文件描述符添加到就绪链表中。
+* epoll_wait功能相当于select，检查就绪队列，为空阻塞，不为空返回
+
+[最全面epoll](https://cloud.tencent.com/developer/news/787829)
+在 epoll_ctl 中首先根据传入 fd 找到 eventpoll、socket相关的内核对象 。对于 EPOLL_CTL_ADD 操作来说，会然后执行到 ep_insert 函数。所有的注册都是在这个函数中完成的。
+对于每一个 socket，调用 epoll_ctl 的时候，都会为之分配一个 epitem。
+
+epoll_ctl过程中，
+在 ep_ptable_queue_proc 函数中，新建了一个等待队列项，并注册其回调函数为 ep_poll_callback 函数。然后再将这个等待项添加到 socket 的等待队列中。<font color=LightCoral>在socket等待队列注册了回调函数，使得数据就绪时可以将文件描述符加入epoll实例的就绪链表</font>
+
+
+epoll 到底用没用到 mmap？ 没有
+
+> 边缘触发和水平触发
+
+个人觉得问题在for循环上，因为边缘io只有在文件描述符状态变化时才发生通知，所以需要使用循环来处理（不管阻塞式io还是非阻塞io。但是非阻塞io可以返回没有数据可读的错误信息，不会阻塞；而阻塞式io回阻塞直到新的数据）
+水平触发可以使用阻塞i/o，不需要使用循环结构，所以不会发生上述情况
+
+但是，存在另一种情况，当某个socket接收缓冲区有新数据分节到达，然后select报告这个socket描述符可读，但随后，协议栈检查到这个新分节检验和错误，然后丢弃这个分节，这时候调用read则无数据可读，如果socket没有被设置nonblocking，此read将阻塞当前线程。      
+所以I/O多路复用绝大部分时候是和非阻塞的socket联合使用。
+
+
+## 底层中断
+
+对于外部中断，CPU在执行当前指令的最后一个时钟周期去查询INTR引脚，若查询到中断请求信号有效，同时在系统开中断（即IF=1）的情 况下，CPU向发出中断请求的外设回送一个低电平有效的中断应答信号，作为对中断请求INTR的应答，系统自动进入中断响应周期。

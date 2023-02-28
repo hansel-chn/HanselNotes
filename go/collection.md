@@ -315,6 +315,9 @@ func (m *man) sing() {
 
 ## How does GoLand of JetBrains find the implementations of interface?
 
+`interface{}`是没有方法的接口所有所有类型都满足interface
+tab字段不仅被用来存储接口本身的信息(例如接口的类型信息、方法集信息等)，还被用来存储具体类型所实现的信息。tab字段是一个itab struct的指针。 itab这个struct的定义如下:
+
 ## Dependency Inversion Principle, Dependency Injection (DI), Inversion of Control (IoC)
 
 [stackoverflow](https://stackoverflow.com/questions/6550700/inversion-of-control-vs-dependency-injection)
