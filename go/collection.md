@@ -269,7 +269,10 @@ Go 1.4 开始使用的是连续栈，而这之前使用的分段栈。 分段栈
 
 * golang 连续栈指的是一整块连续的空间，反而有点类似操作系统的分段；
 * golang 分段栈，指的是在运行时如果空间不足会创建新的栈空间，不同栈空间之间通过双向链表链接，反而有点类似分页；
-* 操作系统分段，指的是虚拟内存对应一整段连续的物理内存区域，问题是粒度不够细，某个时间段内程序只有一小部分被访问，浪费了空间，换入换出磁盘造成大量io操作，且换出后空间的内存空间可能并不连续，即使总和空闲内存空间大于所需内存，程序仍无法装在进内存
+*
+
+操作系统分段，指的是虚拟内存对应一整段连续的物理内存区域，问题是粒度不够细，某个时间段内程序只有一小部分被访问，浪费了空间，换入换出磁盘造成大量io操作，且换出后空间的内存空间可能并不连续，即使总和空闲内存空间大于所需内存，程序仍无法装在进内存
+
 * 操作系统分页，采用细粒度的方法，每个页占4kb空间，访问的页面不存在，就分配空间。页表基地址寄存器记录对应物理地址（空间不够，换入换出以页为单位，页面置换算法）
 
 ## 设计模式
@@ -315,14 +318,16 @@ func (m *man) sing() {
 
 ## How does GoLand of JetBrains find the implementations of interface?
 
-`interface{}`是没有方法的接口所有所有类型都满足interface
-tab字段不仅被用来存储接口本身的信息(例如接口的类型信息、方法集信息等)，还被用来存储具体类型所实现的信息。tab字段是一个itab struct的指针。 itab这个struct的定义如下:
+`interface{}`是没有方法的接口所有所有类型都满足interface tab字段不仅被用来存储接口本身的信息(例如接口的类型信息、方法集信息等)，还被用来存储具体类型所实现的信息。tab字段是一个itab struct的指针。
+itab这个struct的定义如下:
 
 ## Dependency Inversion Principle, Dependency Injection (DI), Inversion of Control (IoC)
 
 [stackoverflow](https://stackoverflow.com/questions/6550700/inversion-of-control-vs-dependency-injection)
 
 [https://www.zhihu.com/question/521822847](https://www.zhihu.com/question/521822847)
+
+[https://www.zhihu.com/question/23277575](https://www.zhihu.com/question/23277575)
 
 [https://www.jianshu.com/p/07af9dbbbc4b](https://www.jianshu.com/p/07af9dbbbc4b)
 ![IOC,DI,DIP关系](./ioc.png "IOC,DI,DIP关系")
@@ -331,9 +336,11 @@ tab字段不仅被用来存储接口本身的信息(例如接口的类型信息�
 * Dependency Injection (DI)  依赖注入(DI)模式是IoC模式的一个更具体的版本，实现通过constructors/setters/Interface ，对象将“依赖”这些以正确地行为。
 * Dependency Inversion Principle 高级模块不应该依赖于低级模块。两者都应该依赖于抽象。抽象不应该依赖于细节。细节应该依赖于抽象。
 
-这就是依赖倒置原则——把原本的高层建筑依赖底层建筑“倒置”过来，变成底层建筑依赖高层建筑。高层建筑决定需要什么，底层去实现这样的需求，但是高层并不用管底层是怎么实现的。这样就不会出现前面的“牵一发动全身”的情况。 控制反转（Inversion of Control） 就是依赖倒置原则的一种代码设计的思路。具体采用的方法就是所谓的依赖注入（Dependency Injection）。
+这就是依赖倒置原则——把原本的高层建筑依赖底层建筑“倒置”过来，变成底层建筑依赖高层建筑。高层建筑决定需要什么，底层去实现这样的需求，但是高层并不用管底层是怎么实现的。这样就不会出现前面的“牵一发动全身”的情况。
+控制反转（Inversion of Control） 就是依赖倒置原则的一种代码设计的思路。具体采用的方法就是所谓的依赖注入（Dependency Injection）。
 
 ## 逃逸分析
+
 [https://cloud.tencent.com/developer/article/1861429](https://cloud.tencent.com/developer/article/1861429)
 [https://www.51cto.com/article/744432.html](https://www.51cto.com/article/744432.html)
 [https://juejin.cn/post/6898679464692187150](https://juejin.cn/post/6898679464692187150)
@@ -343,8 +350,9 @@ tab字段不仅被用来存储接口本身的信息(例如接口的类型信息�
 在编译原理中，分析指针动态范围的方法称之为逃逸分析。通俗来讲，当一个对象的指针被多个方法或线程引用时，我们称这个指针发生了逃逸。 Go语言的逃逸分析是编译器执行静态代码分析后，对内存管理进行的优化和简化，它可以决定一个变量是分配到堆还栈上。
 
 1. 指针逃逸 指针逃逸应该是最容易理解的一种情况了，即在函数中创建了一个对象，返回了这个对象的指针。这种情况下，函数虽然退出了，但是因为指针的存在，对象的内存不能随着函数结束而回收，因此只能分配在堆上。
-2. 栈空间不足 
+2. 栈空间不足
 3. 接口传参，不能确定类型，（interface）逃逸
+
 ```go
 package main
 
@@ -353,24 +361,26 @@ import "fmt"
 var VP *int // a global pointer
 
 func f(vp *int) {
-    VP = vp
+	VP = vp
 }
 
 func g() {
-    var v int // a local variable
-    v = 40
-    f(&v) // 内存逃逸，否则出现悬挂指针
-    *VP = 42
-    fmt.Println(v) // prints 42
+	var v int // a local variable
+	v = 40
+	f(&v) // 内存逃逸，否则出现悬挂指针
+	*VP = 42
+	fmt.Println(v) // prints 42
 }
 
 func main() {
-    g()
-    fmt.Println(*VP) //prints 42
+	g()
+	fmt.Println(*VP) //prints 42
 }
 ```
+
 4. 变量占用内存较大
 5. 编译期间不能确定变量大小
+
 ```go
 package main
 
@@ -452,6 +462,7 @@ func main() {
 }
 
 ```
+
 6. golang闭包
 
 ## go 并发-锁与channel的选择
@@ -503,11 +514,13 @@ func main() {
 Go的channel和Goroutine之间传递消息的方式内部实现时就广泛用到了共享内存和锁，通过对两者进行的组合提供了更高级别的同步机制。
 
 [channel为nil的作用](https://medium.com/justforfunc/why-are-there-nil-channels-in-go-9877cc0b2308)
-比如两个通道值合并，采取`select case`的方式赋给新通道。如果一个通道关闭，`select case`仍然可以取到关闭通道的类型的零值，如`chan int`为0，若此时另一个通道阻塞，会浪费cpu资源。将关闭的通道赋予nil值，通道会阻塞，，就不会执行`case`后语句。
+比如两个通道值合并，采取`select case`的方式赋给新通道。如果一个通道关闭，`select case`仍然可以取到关闭通道的类型的零值，如`chan int`
+为0，若此时另一个通道阻塞，会浪费cpu资源。将关闭的通道赋予nil值，通道会阻塞，，就不会执行`case`后语句。
 
 > 为什么nil通道会被阻塞
 
 代码方面，
+
 ```
 //在 src/runtime/chan.go中
 func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
@@ -522,6 +535,7 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
   // 省略其他逻辑
 }
 ```
+
 * channel缓冲区的大小不是类型声明的一部分
 * 如果通道未被初始化，缓冲区大小将为0
 * 缓冲区为0，通道无缓冲功能
@@ -552,12 +566,22 @@ func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
 优点：避免加互斥锁，可以提高程序的运行效率， 缺点：ABA 问题，值未发生变化但是值在期间被修改过（解决方法添加版本号）；一般处理单个变量；高并发时影响效率，CAS自旋占用CPU资源
 [javaCAS](https://cloud.tencent.com/developer/article/1656853)
 
+# 原子操作需要进入内核态吗
+
+原子操作不一定需要进入内核态，它可以在用户态下实现。在用户态下，原子操作通常使用CPU提供的硬件指令来实现。这些指令可以保证在单个CPU周期内完成原子操作，从而实现线程安全。
+
+在内核态下实现原子操作的主要原因是内核需要管理整个系统的资源，并且需要确保对这些资源的访问是原子的和线程安全的。在内核态下，原子操作通常使用CPU提供的特殊指令或者内核提供的特殊函数来实现。这些操作可以确保对内核资源的访问是原子的和线程安全的。
+
+虽然原子操作可以在用户态下实现，但在某些情况下，例如需要操作内核资源或需要多个线程共享的全局变量，内核态下的原子操作可能更适合。但是，需要注意的是，进入内核态的开销相对较高，因此在实现原子操作时需要仔细考虑其性能和开销。
+
 ABA问题两类：
 
 - 1.由于内存重用（自动GC中不存在）导致的[比较并交换](https://zh.wikipedia.org/zh-cn/%E6%AF%94%E8%BE%83%E5%B9%B6%E4%BA%A4%E6%8D%A2)
 -
+
 2.整体出现的问题（比如链表，地址没变但是指向的节点变了（内容变了），原本期望修改的不是这个节点的内容），`比如栈，ABA问题有什么影响呢？简单的理解，假设我们在实现一个无锁的栈，当前栈项的内容是A。一个线程要往里面原子性插入C，它用CAS操作来保证这种原子性，想当然地认为，只要当前的栈还是A，并且CAS是原子性的，就能保证整个操作的原子性。可是万万没想到，这期间另一个线程，push了一个B，又push了一个A。栈的内容就不是前面那个线程想象的样子了。(实际结果->A->B->A->C,期望结果->A->C->B->A)`
 ,版本号解决
+
 - 如果项目只在乎数值是否正确，那么ABA问题不会影响程序并发的正确性(golang里面是`atomic.CompareAndSwapInt32`)。
 
 [这里的LOCK 称为 LOCK指令前缀，是用来设置CPU的 LOCK# 信号的。（译注：这个信号会使总线锁定，阻止其他处理器接管总线访问内存），直到使用LOCK前缀的指令执行结束，这会使这条指令的执行变为原子操作。在多处理器环境下，设置 LOCK# 信号能保证某个处理器对共享内存的独占使用。](https://blog.haohtml.com/archives/25881)
@@ -602,20 +626,20 @@ task_struct地址的原因。每次在进程从用户空间进入系统空间之
 
 > etcd
 
-如果对读处理没有限制，有可能因为时间差导致follower状态落后，导致读不一致
-可以通过`readindex`机制实现线性一致读
-与zookeeper类似
+如果对读处理没有限制，有可能因为时间差导致follower状态落后，导致读不一致 可以通过`readindex`机制实现线性一致读 与zookeeper类似
 
-1. 与传统数据库的区别 
+1. 与传统数据库的区别
+
 * 存储的一般是控制平台的数据
 * MySQL 只保证最终一致性 eventual consistency（而且是不可配置的），因为它采用的是异步复制
 * 通常不会是一些内容数据比如文本信息，更多的存储一些不经常更新状态的相对少量几个G左右的控制数据。
 
 3. 与zookeeper区别：采用的一致性算法不同
-[Paxos算法与Zookeeper分析,zab (zk)raft协议(etcd) 8. 与Galera及MySQL Group replication的比较](https://www.cnblogs.com/williamjie/p/11137165.html)
+   [Paxos算法与Zookeeper分析,zab (zk)raft协议(etcd) 8. 与Galera及MySQL Group replication的比较](https://www.cnblogs.com/williamjie/p/11137165.html)
 
 4. 与redis的区别
-* 都支持键值存储 
+
+* 都支持键值存储
 * redis主从异步复制，数据丢失，不适合做注册和发现；etcd基于raft协议，不同节点数据一致，数据不丢
 * redis与etcd相比没有watch
 * redis 注册和发现如果采用redis的发布和订阅来做，网络出现问题收不到不会重复通知（不清楚）
@@ -623,21 +647,27 @@ task_struct地址的原因。每次在进程从用户空间进入系统空间之
 > rpc(grpc)和http
 
 不是一个层面的东西。http是一种通信协议格式，rpc是一种通讯方式。rpc可以采用诸如http协议或者自定义的tcp协议。rpc是面向于服务更高级的封装，包括服务发现，负载均衡熔断等。
+
 * 使用http协议的优势是通用，主流的网页浏览支持http协议。http协议适用于大包通讯，对延迟要求不高，无需维持长连接。
-* 自定义的二进制协议优势是低延迟，小包通讯，频率高，业务层长连接，如moba游戏。与自定义协议相比，http1.1协议编码效率低（报头采用文本编码，导致报文中有效字节少），不适用于后端进程之间的通信。所以，grpc采用了http2.0协议格式，优化了编码效率
+*
+
+自定义的二进制协议优势是低延迟，小包通讯，频率高，业务层长连接，如moba游戏。与自定义协议相比，http1.1协议编码效率低（报头采用文本编码，导致报文中有效字节少），不适用于后端进程之间的通信。所以，grpc采用了http2.0协议格式，优化了编码效率
 
 ## golang使用值传递还是指针
+
 [golang使用值传递还是指针](https://hedzr.com/golang/pointer/go-pointer/)
 
 ## golang nil
+
 nil是预定义的标识符，代表指针、通道、函数、接口、映射或切片的零值，也就是预定义好的一个变量：
+
 ```
 type Type int
 var nil Type
 ```
 
-
 ## golang内存分配
+
 1. golang在程序启动的时候会向操作系统申请一大块内存，由go自己管理
 2. golang申请到的内存会分为三个区域，span，bitmap和arena，arena由8kb大小的页组成，span中存放着页的地址，bitmap每个字节分为两部分，每部分4个bit，标识arena中的页是否有指针，是否被GC标记
 3. golang基本的内存管理单元是mspan，go设置了多种不同大小，size的object，对应不同种类的mspan。mspan内部sizeclass决定了mspan分配页的个数
@@ -646,3 +676,35 @@ var nil Type
 6. mcentral多个协程共享，需要消耗锁，mcentral有多个对应不同大小的mspan，每个central中存放着已分配和未分配的mspan
 7. 如果mcentral中的mspan被分配完，向mheap中申请，如内存消耗完会向操作系统申请新内存，mheap用于大对象内存的分配，mheap将内存分割为不同大小的object（mspan）
 8. 极小对象会被tiny分配器分配到一个object中。比如classsize的前几个，被分配了一个页，object大小很小，一个mspan可分配多个object
+
+## string 和[]byte互转
+根据长度确定是否重新分配内存
+```
+// runtime/string.go go 1.15.7
+const tmpStringBufSize = 32
+
+type tmpBuf [tmpStringBufSize]byte
+
+func stringtoslicebyte(buf *tmpBuf, s string) []byte {
+ var b []byte
+ if buf != nil && len(s) <= len(buf) {
+  *buf = tmpBuf{}
+  b = buf[:len(s)]
+ } else {
+  b = rawbyteslice(len(s))
+ }
+ copy(b, s)
+ return b
+}
+// rawbyteslice allocates a new byte slice. The byte slice is not zeroed.
+func rawbyteslice(size int) (b []byte) {
+ cap := roundupsize(uintptr(size))
+ p := mallocgc(cap, nil, false)
+ if cap != uintptr(size) {
+  memclrNoHeapPointers(add(p, uintptr(size)), cap-uintptr(size))
+ }
+
+ *(*slice)(unsafe.Pointer(&b)) = slice{p, size, int(cap)}
+ return
+}
+```

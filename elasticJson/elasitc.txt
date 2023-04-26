@@ -1,0 +1,59 @@
+//
+/////////////////
+//PUT my-index-000001
+//{
+//  "mappings": {
+//    "dynamic": "runtime",
+//    "properties": {
+//      "@timestamp": {
+//        "type": "date"
+//      }
+//    }
+//  }
+//}
+//
+//PUT my-index-000001/_doc/1
+//{
+//  "@timestamp":1516729294000,
+//  "test":"test"
+//}
+//
+//GET my-index-000001/_doc/1
+//
+//GET my-index-000001/_mapping
+//
+//
+/////////////////
+//DELETE my-index-000002/_doc/1
+//
+//PUT my-index-000002
+//{
+//  "mappings": {
+//    "runtime":{
+//        "day_of_week": {
+//        "type": "keyword"}
+//    },
+//    "properties": {
+//      "@timestamp": {
+//        "type": "date"
+//      }
+//    }
+//  }
+//}
+//
+//PUT my-index-000002/_mapping
+//{
+//  "runtime":{
+//        "day_of_week": null
+//    }
+//}
+//
+//PUT my-index-000002/_doc/1
+//{
+//  "@timestamp":1516729294000,
+//  "test":"test",
+//  "day_of_week":"1111111111"
+//}
+//
+//GET my-index-000002/_mapping
+//GET my-index-000002/_doc/1
