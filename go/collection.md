@@ -678,7 +678,9 @@ var nil Type
 8. 极小对象会被tiny分配器分配到一个object中。比如classsize的前几个，被分配了一个页，object大小很小，一个mspan可分配多个object
 
 ## string 和[]byte互转
+
 根据长度确定是否重新分配内存
+
 ```
 // runtime/string.go go 1.15.7
 const tmpStringBufSize = 32
@@ -708,3 +710,117 @@ func rawbyteslice(size int) (b []byte) {
  return
 }
 ```
+
+## golang不可比较类型
+
+* 不可比较类型slice，map，function
+
+```
+package main
+
+import "fmt"
+
+type A struct {
+	name  string
+	id    int
+	slice []int
+}
+
+func main() {
+	test1 := A{
+		name:  "test",
+		id:    1,
+		slice: []int{1, 1},
+	}
+	test2 := A{
+		name:  "test",
+		id:    1,
+		slice: []int{1, 1},
+	}
+	//fmt.Println(test1 == test2) //Invalid operation: test1 == test2 (the operator == is not defined on a)
+	fmt.Println(test1)
+	fmt.Println(test2)
+}
+```
+
+### golang 中的四种类型转换总结
+
+[https://learnku.com/articles/42797](https://learnku.com/articles/42797)
+
+#### golang .(type)语法
+
+```go
+func value(c Context, key any) any {
+for {
+switch ctx := c.(type) {
+case *valueCtx:
+if key == ctx.key {
+return ctx.val
+}
+c = ctx.Context
+case *cancelCtx:
+if key == &cancelCtxKey {
+return c
+}
+c = ctx.Context
+case *timerCtx:
+if key == &cancelCtxKey {
+return &ctx.cancelCtx
+}
+c = ctx.Context
+case *emptyCtx:
+return nil
+default:
+return c.Value(key)
+}
+}
+}
+```
+
+#### 类型断言
+
+#### unsafe类型强转
+
+#### 显示类型转换
+
+一个显式转换的表达式 T (x) ，其中 T 是一种类型并且 x 是可转换为类型的表达式 T，例如：uint(666)
+
+在以下任何一种情况下，变量 x 都可以转换成 T 类型：
+
+* x 可以分配成 T 类型。
+* 忽略 struct 标签 x 的类型和 T 具有相同的基础类型。
+* 忽略 struct 标记 x 的类型和 T 是未定义类型的指针类型，并且它们的指针基类型具有相同的基础类型。
+* x 的类型和 T 都是整数或浮点类型。
+* x 的类型和 T 都是复数类型。
+* x 的类型是整数或 [] byte 或 [] rune，并且 T 是字符串类型。
+* x 的类型是字符串，T 类型是 [] byte 或 [] rune。
+
+```go
+// * x 可以分配成 T 类型。
+package main
+
+import "fmt"
+
+type Name interface {
+	Da()
+}
+
+type A struct {
+}
+
+func (a A) Da() {
+	fmt.Println("===========")
+}
+
+func main() {
+	a := A{}
+	_, ok := interface{}(a).(A)
+	fmt.Println(ok)
+}
+```
+
+#### 隐式类型转换
+
+* 如函数传参
+
+
