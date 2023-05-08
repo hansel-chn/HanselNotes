@@ -317,3 +317,6 @@ func propagateCancel(parent Context, child canceler) {
 * 若 `parent`类型断言为 `*cancelCtx`，添加 `children`
 * 若否，新启一个协程，监控子ctx和父ctx关闭
 
+## 源码使用
+
+[https://bongnv.com/blog/2021-04-10-safely-use-go-context-to-pass-data/](https://bongnv.com/blog/2021-04-10-safely-use-go-context-to-pass-data/)
