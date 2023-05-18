@@ -42,8 +42,7 @@ TTL是什么意思?TTL是 Time To Live的缩写，该字段指定IP包被路由�
 ICMP（Internet控制消息协议）是IP协议的辅助协议。ICMP协议用来传递网络设备之间的查错和控制信息，起到收集各种网络信息、诊断和排除网络故障的作用，大大提升了IP数据报文交互成功的机会。
 ICMP功能大致分为两类：差错通知和信息查询
 [ICMP](https://zhuanlan.zhihu.com/p/387469317)
-ICMP中的tracert命令
-tracert命令用于调查与目的主机通信的所有经过的地址，跟ping命令一样，也是ICMP中的典型代表之一。
+ICMP中的tracert命令 tracert命令用于调查与目的主机通信的所有经过的地址，跟ping命令一样，也是ICMP中的典型代表之一。
 
 ## 状态码
 
@@ -56,7 +55,7 @@ tracert命令用于调查与目的主机通信的所有经过的地址，跟ping
 
 6字节，用于在网络中唯一标识网卡
 
-##CA证书
+## CA证书
 
 首先 CA 会把持有者的公钥、用途、颁发者、有效时间等信息打成一个包，然后对这些信息进行 Hash 计算，得到一个 Hash 值；
 
@@ -64,5 +63,49 @@ tracert命令用于调查与目的主机通信的所有经过的地址，跟ping
 
 最后将 Certificate Signature 添加在文件证书上，形成数字证书；
 
-
 ## tcp和udp连接问题
+
+## 交换机和路由器
+
+[https://www.163.com/dy/article/EOSTK9SD0531A5J3.html](https://www.163.com/dy/article/EOSTK9SD0531A5J3.html)
+
+* 在同一网段中，直接二层，通过arp协议等发送信息
+* 不在同一个网段中，通过路由器
+
+> 路由模式和nat模式的区别
+
+* 若内网采用了私网地址，则需要NAT模式进行地址转换；路由模式内网采用了合法公网地址
+* NAT地址转换会在路由器出口改变数据包的目的ip和端口
+
+### 路由器-不同网段
+
+DHCP获取ip的时候可以获得一些其他的信息如dns，网关，掩码
+
+* 如何找网关mac地址：根据网关ip进行ARP请求。
+
+路由表作用原理：[https://zhuanlan.zhihu.com/p/145946764](https://zhuanlan.zhihu.com/p/145946764) <br>
+[https://mp.weixin.qq.com/s/ktahxXMDtDVufyigU49bXg](https://mp.weixin.qq.com/s/ktahxXMDtDVufyigU49bXg)
+
+### 二三四层交换机
+
+二层交换机-第二层网桥 三层交换机-第三层路由 四层交换机-第四层应用端口号
+
+### MTU为什么存在
+
+[https://developer.aliyun.com/article/222535](https://developer.aliyun.com/article/222535)
+MTU的设置基于并发和传输效率的考量
+> Maximum transmission unit
+> Maximum segment size
+
+* 建立连接时双方协商MSS值
+
+### IP数据包的总长度最大65535
+
+由于IP数据报头部表示总长度的字段为16位
+
+### TLS 建立在 TCP 协议基础上，在 TCP 连接成功建立后，执行握手协议验证证书并协商主加密密钥。
+
+### ACK丢失不会重传，会重传FIN报文等
+
+重要[https://www.cnblogs.com/rexcheny/p/11143128.html](https://www.cnblogs.com/rexcheny/p/11143128.html)
+[https://xiaolincoding.com/network/3_tcp/tcp_optimize.html#%E4%B8%BB%E5%8A%A8%E6%96%B9%E7%9A%84%E4%BC%98%E5%8C%96](https://xiaolincoding.com/network/3_tcp/tcp_optimize.html#%E4%B8%BB%E5%8A%A8%E6%96%B9%E7%9A%84%E4%BC%98%E5%8C%96)
