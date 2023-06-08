@@ -5,10 +5,13 @@
 ## XSS
 
 ## 同源策略下，为什么还会存在csrf
+
 * 同源策略不阻止发送请求 如前所述，SOP仅适用于xmlhttprequest。这意味着根据规范，浏览器必须发送ORIGIN报头以及通过xmlhttprequest发出的请求。
-* 同源策略(Same Origin Policy, SOP)是一种浏览器级别的安全控制，它规定了由一个源提供服务的文档或脚本如何与来自其他源的资源进行交互。基本上，它可以防止在一个源下运行的脚本从另一个源读取数据。仍然允许跨域请求和表单提交，但不允许从其他来源读取数据。这意味着，如果你在一个易受攻击的网站上执行CSRF攻击，导致一些服务器端状态改变(例如，用户创建，文档删除等)，攻击将成功，但你将无法读取响应。简而言之，SOP只是防止读取来自不同来源的数据。它不包括用于执行CSRF攻击的跨域表单提交。
-[https://stackoverflow.com/questions/33261244/why-same-origin-policy-isnt-enough-to-prevent-csrf-attacks](https://stackoverflow.com/questions/33261244/why-same-origin-policy-isnt-enough-to-prevent-csrf-attacks)
-[https://security.stackexchange.com/questions/157061/how-does-csrf-correlate-with-same-origin-policy](https://security.stackexchange.com/questions/157061/how-does-csrf-correlate-with-same-origin-policy)
+* 同源策略(Same Origin Policy, SOP)
+  是一种浏览器级别的安全控制，它规定了由一个源提供服务的文档或脚本如何与来自其他源的资源进行交互。基本上，它可以防止在一个源下运行的脚本从另一个源读取数据。仍然允许跨域请求和表单提交，但不允许从其他来源读取数据。这意味着，如果你在一个易受攻击的网站上执行CSRF攻击，导致一些服务器端状态改变(
+  例如，用户创建，文档删除等)，攻击将成功，但你将无法读取响应。简而言之，SOP只是防止读取来自不同来源的数据。它不包括用于执行CSRF攻击的跨域表单提交。
+  [https://stackoverflow.com/questions/33261244/why-same-origin-policy-isnt-enough-to-prevent-csrf-attacks](https://stackoverflow.com/questions/33261244/why-same-origin-policy-isnt-enough-to-prevent-csrf-attacks)
+  [https://security.stackexchange.com/questions/157061/how-does-csrf-correlate-with-same-origin-policy](https://security.stackexchange.com/questions/157061/how-does-csrf-correlate-with-same-origin-policy)
 
 csrf 特征：
 
@@ -34,7 +37,16 @@ cookie 的方式有关。 浏览器使用 cookie 情况主要包括以下几点�
 [https://tech.meituan.com/2018/10/11/fe-security-csrf.html](https://tech.meituan.com/2018/10/11/fe-security-csrf.html)
 
 ### referer and origin
+
 [https://cloud.tencent.com/developer/article/1467299](https://cloud.tencent.com/developer/article/1467299)
 
 ### 同源策略与跨域以及怎么解决跨域，原因。同源本质（数据到了浏览器后被丢弃了）
+
 [https://zhuanlan.zhihu.com/p/104984869](https://zhuanlan.zhihu.com/p/104984869)
+
+### Oauth
+
+#### Oauth2的授权码模式为什么要用code获取token?
+
+1,
+认证服务器的返回是通过重定向实现的，我理解重定向只能在url上做文章，意味着所有信息都只能通过url传输。通过传输code，让应用再去请求一次token是为了不直接暴露token。code一般都是只能在很短的时间内有效，并且只能使用一次。保证了安全性。2，你说的直接通过认证服务器将code传给后端接口，这个肯定不行，因为认证服务器调了你的接口，你自己决定重定向的url，但是重定向的请求没有返回给用户，而是给了认证服务器，有什么用呢？

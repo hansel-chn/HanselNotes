@@ -38,8 +38,13 @@ func main() {
 	//maps are no different. v is a copy of the contents of the value at m[k].是个值拷贝不能赋值
 	//但是还有个问题，为什么不能在内部做，
 
-	//ArrayInMap[1][0] = 111
+	// 解释：由于数组是值类型，因此对数组进行修改只能通过赋值或使用指针来实现。你可以创建一个指向数组的指针，并通过指针操作数组元素来进行修改。
+	// 由于map[1]不可寻址（不可寻址原因，地址会变化），所以数组不可通过地址修改（情况1），只能通过赋值修改（情况2）
+
+	//ArrayInMap[1][0] = 111 --------情况1
 	//ArrayInMap[1][0] = 222
+	//ArrayInMap[1] = [2]int{222, 2} --------情况2
+	//ArrayInMap[1] = [2]int{222, 2}
 	fmt.Println("ArrayInMap")
 	fmt.Println(ArrayInMap[1])
 
