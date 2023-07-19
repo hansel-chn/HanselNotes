@@ -1,43 +1,4 @@
-adfssf
-adfs
-adsf
-ajrrrrrrRrg
+# Vim
 
-
-rdfsdfasdfar fdsfksdfhasdf asd f sfdf
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-asdasd
-dsdasdfsdf
-dsdasdfsdf
-
-56
-
-[//]: # (dsdasdfsdf)
-[//]: # (dsdasdfsdf)
-dasdfsdf
-
-
-df
-f
-
-d
-ds
-sdf
-dsdasdfsdf  d asd as da sd as da sd asd
-d
-asdasd
-asdasd
-asdasd
-
-
-
-
+## 替换每行最后一个日期，在sql语句中
+如`44,60s/\d',\s\zs.*\ze'`

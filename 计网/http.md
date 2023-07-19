@@ -71,3 +71,20 @@ POST 的语义是根据请求负荷（报文主体）对指定的资源做出处
 
 逐步升级：WebSocket 的握手过程允许逐步升级协议。当客户端发起 HTTP 请求时，服务器可以检查请求头中的特定字段来判断客户端是否支持 WebSocket。如果服务器支持 WebSocket，它会返回一个特定的握手响应，指示客户端可以升级到 WebSocket 协议进行后续通信。如果服务器不支持 WebSocket，它可以以标准的 HTTP 响应继续处理。这样的逐步升级机制可以保证与不同的客户端进行兼容，并允许服务器在支持和不支持 WebSocket 的客户端之间进行区分。
 ```
+
+## 服务器端出现大量time_tait和close_wait原因
+
+[https://zhuanlan.zhihu.com/p/591724475](https://zhuanlan.zhihu.com/p/591724475)
+
+* 未开启`keepAlive`，不管是哪一方禁用`keepAlive`，定义`connection: close`，都是在服务器端关闭
+
+> 1. “客户端禁用了 HTTP Keep-Alive，服务端开启 HTTP Keep-Alive”。 客户端请求的 `header` 定义了 `connection：close` 信息，连接不再重用，服务器端关闭
+> 2. “客户端开启了 HTTP Keep-Alive，服务端禁用了 HTTP Keep-Alive” 在服务端主动关闭连接的情况下，只要调用一次 close() 就可以释放连接，剩下的工作由内核 TCP 栈直接进行了处理，整个过程只有一次 syscall；如果是要求 客户端关闭，则服务端在写完最后一个 response 之后需要把这个 socket 放入 readable 队列，调用 select / epoll 去等待事件；然后调用一次 read() 才能知道连接已经被关闭，这其中是两次 syscall，多一次用户态程序被激活执行，而且 socket 保持时间也会更长。
+
+* 长连接超时，服务器主动断开连接
+
+* HTTP 长连接的请求数量达到上限
+
+## 队头阻塞及应对方法，http2和http3如何解决该问题的
+
+[https://zhuanlan.zhihu.com/p/330300133](https://zhuanlan.zhihu.com/p/330300133)

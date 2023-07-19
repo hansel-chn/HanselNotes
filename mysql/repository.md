@@ -102,3 +102,13 @@ graph LR;
 * hash join 构建哈希表首先对构建表的连接键值进行哈希，并根据哈希值将它们放置到一个或另一个桶中。然后QP开始处理探测端，它对探测值应用相同的哈希函数，确定桶并比较桶内的值。如果匹配，则返回该行。 [https://www.sqlshack.com/hash-join-execution-internals/](https://www.sqlshack.com/hash-join-execution-internals/)
 * merge join
 * nested loop
+
+## mysql varchar 255 vs 256
+Last but not least, as @ypercube has reminded me, more than 1 byte for the length may be required even if you are using VARCHAR(255), because the definition is in characters, while the length stores bytes. For example REPEAT('ñ', 255) has more than 2^255 bytes in utf8, so it would require more than 1 byte for storing its length:
+[https://dba.stackexchange.com/questions/76469/mysql-varchar-length-and-performance](https://dba.stackexchange.com/questions/76469/mysql-varchar-length-and-performance)
+
+[https://www.jianshu.com/p/1a879c3c8c07](https://www.jianshu.com/p/1a879c3c8c07)
+
+[https://stackoverflow.com/questions/15157227/mysql-varchar-index-length](https://stackoverflow.com/questions/15157227/mysql-varchar-index-length)
+
+[https://stackoverflow.com/questions/29516162/how-does-mysql-varchar-know-how-many-bytes-indicate-the-length](https://stackoverflow.com/questions/29516162/how-does-mysql-varchar-know-how-many-bytes-indicate-the-length)

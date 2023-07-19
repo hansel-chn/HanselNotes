@@ -13,6 +13,9 @@
   [https://stackoverflow.com/questions/33261244/why-same-origin-policy-isnt-enough-to-prevent-csrf-attacks](https://stackoverflow.com/questions/33261244/why-same-origin-policy-isnt-enough-to-prevent-csrf-attacks)
   [https://security.stackexchange.com/questions/157061/how-does-csrf-correlate-with-same-origin-policy](https://security.stackexchange.com/questions/157061/how-does-csrf-correlate-with-same-origin-policy)
 
+* 如何防范csrf
+  [https://tech.meituan.com/2018/10/11/fe-security-csrf.html](https://tech.meituan.com/2018/10/11/fe-security-csrf.html)
+
 csrf 特征：
 
 攻击⼀般来源于第三方域名 ccsrf 不能获取到 cookie，但是可以利用浏览器的特性去使用。 接口的所有参数都是可以预测的（攻击网站清楚要伪造请求接口的请求参数）

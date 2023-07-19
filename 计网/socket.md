@@ -64,3 +64,25 @@ linux目前异步io支持的不好，多路复用能解决大部分问题，折�
 socket 的本质是一种资源，它包含了端到端的四元组信息，用来标识数据包的归属。因此，尽管 tcp 协议的端口号只有 65535 个，但是进程可拥有的 socket 数据却不限于此（受限于进程最大文件描述符数据）；
 
 ## 一致性哈希
+
+## Can two applications listen to the same port?
+
+[https://stackoverflow.com/questions/1694144/can-two-applications-listen-to-the-same-port?rq=3](https://stackoverflow.com/questions/1694144/can-two-applications-listen-to-the-same-port?rq=3)
+
+* tcp不可以
+* udp组播可以
+* linux内核3.9以后，`SO_REUSEPORT`可以。UDP中，单播的情况下，如果多个进程绑定同一个ip和端口，则只会有一个进程收到请求
+
+`SO_REUSEPORT`:[https://zhuanlan.zhihu.com/p/380461954](https://zhuanlan.zhihu.com/p/380461954)
+
+## 为什么tcp没有多播
+
+[https://networkengineering.stackexchange.com/questions/16170/is-multicast-possible-in-tcp](https://networkengineering.stackexchange.com/questions/16170/is-multicast-possible-in-tcp)
+
+## 多路复用的优势
+
+多路复用（I/O multiplexing）是一种同时监听多个 I/O 事件的机制，它能够有效地处理大量的连接和并发操作。
+
+资源效率：使用多路复用可以将多个 I/O 事件集中在一个线程或进程中处理，避免了创建大量线程或进程的开销。
+
+非阻塞I/O方式需要不断轮询，会消耗大量CPU时间，而后台又可能有多个任务在同时轮询：所以在一个进程循环查询多个任务的完成状态，只要有任何一个任务完成，就去处理它

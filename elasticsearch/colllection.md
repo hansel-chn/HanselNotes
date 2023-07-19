@@ -36,12 +36,14 @@ ES 中的 [Mapping](https://www.cnblogs.com/codeshell/p/14445420.html) 相当于
 * 定义索引中的字段的类型，比如字符串，数字等。
 * 定义索引中的字段是否建立倒排索引。 一个 Mapping 是针对一个索引中的 Type 定义的：
 
-ES 中的文档都存储在索引的 Type 中 在 ES 7.0 之前，一个索引可以有多个 Type，所以一个索引可拥有多个 Mapping 在 ES 7.0 之后，一个索引只能有一个 Type`（对应"_type": "_doc"）`，所以一个索引只对应一个 Mapping
+ES 中的文档都存储在索引的 Type 中 在 ES 7.0 之前，一个索引可以有多个 Type，所以一个索引可拥有多个 Mapping 在 ES 7.0 之后，一个索引只能有一个 Type`（对应"_type": "_doc"）`
+，所以一个索引只对应一个 Mapping
 
 字段(属性)
 一个 mapping 类型中定义了与文档相关的多个字段（属性)
 
 ## ES基础
+
 [es基础](https://learnku.com/articles/40400)
 
 [es](https://www.cnblogs.com/qdhxhz/p/11448451.html)
@@ -54,10 +56,38 @@ Doc是Index的单条记录，等同于数据库中的行
 
 ES的选举
 [主节点选举，分片选举](http://blog.itpub.net/9399028/viewspace-2666851/)
+
 * Master的选举（选举主节点）
 * shard的选举（选举主分片）
 
->Master的选举（选举主节点） Bully选举算法
+> Master的选举（选举主节点） Bully选举算法
 
 ## ES分片
+
 [扩增分片](https://blog.51cto.com/lee90/2467377)
+
+## agg doc_count_error_upper_bound 问题
+
+It does seem like a bug. Looking at the code, what we're giving the user is basically the maximum potential doc_count of
+a term which didn't make any of the shards top n. Which isn't quite what we intended. It should be the maximum potential
+doc_countn of a term which didn't make the final top n, not just any particular shard.
+
+[https://github.com/elastic/elasticsearch/issues/35987](https://github.com/elastic/elasticsearch/issues/35987)
+
+[老版本例子参考，可能不适用于当前版本](https://www.elastic.co/guide/en/elasticsearch/reference/6.5/search-aggregations-bucket-terms-aggregation.html#search-aggregations-bucket-terms-aggregation-approximate-counts)
+
+* sum_other_doc_count
+
+  sum_other_doc_count is the number of documents that didn’t make it into the the top size terms. If this is greater
+  than 0, you can be sure that the terms agg had to throw away some buckets, <font color=LightCoral>**either because
+  they didn’t fit into size on the coordinating node or they didn’t fit into shard_size on the data node.**</font>
+
+* doc_count_error_upper_bound
+
+an upper bound of the error on the document counts for each term
+
+举例：三个节点，返回的Z在两个节点存在，另一个节点不存在。z在不存在节点`size`范围内`doc_count`最小值，即是z对应`doc_count_error_upper_bound`的上界。
+
+总的`doc_count_error_upper_bound`是各个节点`size`范围内`doc_count`
+最小值之和，[老版本例子参考，可能不适用于当前版本](https://www.elastic.co/guide/en/elasticsearch/reference/6.5/search-aggregations-bucket-terms-aggregation.html#search-aggregations-bucket-terms-aggregation-approximate-counts)
+提到了不准确问题但未解决。
