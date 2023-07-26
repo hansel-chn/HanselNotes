@@ -823,4 +823,33 @@ func main() {
 
 * 如函数传参
 
+#### 编译器验证接口是否实现
 
+var _ I = (*T)(nil) // Verify that *T implements I.
+
+####  golang interface nil 判断
+
+```go
+
+var val *Temp
+
+// taking a interface
+var val2 interface{}
+
+// val2 is a non-nil interface
+// holding a nil pointer (val)
+val2 = val
+
+fmt.Printf("val2 is a nil interface: %v\n", val2 == nil)
+
+fmt.Printf("val2 is a interface holding a nil"+
+" pointer: %v\n", val2 == (*Temp)(nil))
+fmt.Println(val2.(*Temp)==nil)
+fmt.Println(val2==(*int)(nil))
+```
+
+
+#### 为什么map，assert，channel可以有不同的返回值个数
+[https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values](https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values)
+
+[https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions](https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions)
