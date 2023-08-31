@@ -112,3 +112,32 @@ Last but not least, as @ypercube has reminded me, more than 1 byte for the lengt
 [https://stackoverflow.com/questions/15157227/mysql-varchar-index-length](https://stackoverflow.com/questions/15157227/mysql-varchar-index-length)
 
 [https://stackoverflow.com/questions/29516162/how-does-mysql-varchar-know-how-many-bytes-indicate-the-length](https://stackoverflow.com/questions/29516162/how-does-mysql-varchar-know-how-many-bytes-indicate-the-length)
+
+## mysql count and sum
+```
+SELECT
+	SUM( daily_qi.test = 'a' ),
+	COUNT( daily_qi.test = 'a' ),
+	-- 	==========================
+	SUM(
+	IF
+	( daily_qi.test = 'a', 1, 0 )),
+	COUNT(
+	IF
+	( daily_qi.test = 'a', 1, 0 )),
+	-- 	==========================
+	SUM(
+	IF
+	( daily_qi.test = 'a', 1, NULL )),
+	COUNT(
+	IF
+	( daily_qi.test = 'a', 1, NULL )) 
+	-- 	==========================
+FROM
+	`daily_qi`;
+```
+ 
+```
+result:
+      	NULL 0  0  5  NULL  0
+```

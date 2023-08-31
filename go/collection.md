@@ -189,13 +189,64 @@ string实际上储存的是16位，八位地址八位长度
 
 ## mask and sweep 和三色标记法
 
+> golang GC的发展
+> 由起初的标记->清除法到之后的三色标记法
+> (原因：不想暂停业务逻辑过长时间影响程序运行，做法：采用强三色不变性和弱三色不变性保障GC过程不会错误回收仍在正常引用的对象)
+
+
+### 强三色不变性和弱三色不变性
+stw只是减少了，但是其实都有stw
+#### 强三色不变性：不存在黑色引用白色，核心思想是在赋值器修改对象图（比如，向黑色的对象插入白色的对象时处理）
+
+* 解决方法：插入写屏障，在向黑色对象插入新对象时，不允许黑色对象引用白色对象；在黑色对象引用新对象时，对其着色为灰色
+    * 缺点： 需要二次stw处理栈
+    * 额外处理：只对堆上的数据采用写屏障，不对栈空间对象处理；栈上发生写操作，将栈上的数据标记恒灰，扫描后进行stw处理，重新对栈扫描
+
+#### 弱三色不变性：黑色对象引用的白色对象都处理灰色的保护下，核心思想是在赋值器修改对象图（比如，从白色或者灰色的对象删除白色节点时处理）
+
+* 解决方法：删除写屏障，在从白色或者灰色对象删除对象时，对被删除的白色对象着色
+    * 缺点：回收轻度低，堆上对象被删除，即使无指针指向该对象，在此轮GC仍可存活，在下轮GC处理
+    * 额外处理：同样只对堆上数据生效，不对栈空间对象处理
+  
+注意，任意写屏障技术都不在栈上应用，因为要保证栈的运行效率。
+
+[//]: # (插入写屏障”机制,对于栈中的对象是不生效的，“插入写屏障” 仅仅使用在堆中生效。所以在结束时需要STW来重新扫描栈，执行三色标记法回收白色垃圾)
+
+插入和删除写屏障的取名依赖不同的关注点，函数类似，但是插入关注的是`ptr`，删除关注`slot`
+
+```
+// slot节点当前下游对象，ptr节点新添加的下游对象
+// 灰色赋值器 Dijkstra 插入屏障
+func DijkstraWritePointer(slot *unsafe.Pointer, ptr unsafe.Pointer) {
+    shade(ptr)
+    *slot = ptr
+}
+// 黑色赋值器 Yuasa 屏障
+func YuasaWritePointer(slot *unsafe.Pointer, ptr unsafe.Pointer) {
+    shade(*slot)
+    *slot = ptr
+}
+// 混合写屏障
+func HybridWritePointerSimple(slot *unsafe.Pointer, ptr unsafe.Pointer) {
+	shade(*slot)
+	shade(ptr)
+	*slot = ptr
+}
+```
+
+###参考文献
+
 [golang GC](https://www.cnblogs.com/flippedxyy/p/15558742.html)
 
-[这里图片错误，Yuasa写屏障图片画错，正确应该是将删除的节点上色，图片画成了将指向删除节点的节点上色](https://golang.design/under-the-hood/zh-cn/part2runtime/ch08gc/barrier/)
+<div id="refer-anchor-1"></div>
 
-强三色不变性和弱三色不变性
+[1] [https://www.jianshu.com/p/4c5a303af470](https://www.jianshu.com/p/4c5a303af470)
 
-插入写屏障”机制,对于栈中的对象是不生效的，“插入写屏障” 仅仅使用在堆中生效。所以在结束时需要STW来重新扫描栈，执行三色标记法回收白色垃圾
+<div id="refer-anchor-1"></div>
+
+[2] [这里图片错误，Yuasa写屏障图片画错，正确应该是将删除的节点上色，图片画成了将指向删除节点的节点上色](https://golang.design/under-the-hood/zh-cn/part2runtime/ch08gc/barrier/)
+
+个人感觉[[1]](#refer-anchor-1)比较准确，[[2]](#refer-anchor-2)很多内容值得商榷
 
 ## var, new and make
 
@@ -823,4 +874,26 @@ func main() {
 
 * 如函数传参
 
+#### golang切片append
 
+底层原理，个人推测类似[https://go.dev/blog/slices-intro](https://go.dev/blog/slices-intro)中的`AppendByte`
+
+```
+	var a []string
+	fmt.Println(len(a),cap(a))
+	b:=make([]string,0,10)
+	// b:=make([]string,0)
+	fmt.Println(len(b))
+	fmt.Println(cap(b))
+	b = append(b, "111","222")
+	c:=[]string{"333","444"}
+	a = append(b,c...)
+	b[0]="aaaaaaaaaaa"
+	fmt.Println(a)
+	fmt.Println(cap(a))
+	fmt.Println(len(b))
+```
+
+简而言之，像切片a通过`a = append(b,c...)`添加数据，如果切片b容量够用，则a和b共享地址； 若切片b容量不够用，则得到的是新切片的大小。
+
+通过更改切片b的第一个元素，可以判断是否共享底层切片
