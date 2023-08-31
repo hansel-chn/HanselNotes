@@ -193,9 +193,10 @@ string实际上储存的是16位，八位地址八位长度
 > 由起初的标记->清除法到之后的三色标记法
 > (原因：不想暂停业务逻辑过长时间影响程序运行，做法：采用强三色不变性和弱三色不变性保障GC过程不会错误回收仍在正常引用的对象)
 
-
 ### 强三色不变性和弱三色不变性
+
 stw只是减少了，但是其实都有stw
+
 #### 强三色不变性：不存在黑色引用白色，核心思想是在赋值器修改对象图（比如，向黑色的对象插入白色的对象时处理）
 
 * 解决方法：插入写屏障，在向黑色对象插入新对象时，不允许黑色对象引用白色对象；在黑色对象引用新对象时，对其着色为灰色
@@ -207,7 +208,7 @@ stw只是减少了，但是其实都有stw
 * 解决方法：删除写屏障，在从白色或者灰色对象删除对象时，对被删除的白色对象着色
     * 缺点：回收轻度低，堆上对象被删除，即使无指针指向该对象，在此轮GC仍可存活，在下轮GC处理
     * 额外处理：同样只对堆上数据生效，不对栈空间对象处理
-  
+
 注意，任意写屏障技术都不在栈上应用，因为要保证栈的运行效率。
 
 [//]: # (插入写屏障”机制,对于栈中的对象是不生效的，“插入写屏障” 仅仅使用在堆中生效。所以在结束时需要STW来重新扫描栈，执行三色标记法回收白色垃圾)
@@ -234,7 +235,7 @@ func HybridWritePointerSimple(slot *unsafe.Pointer, ptr unsafe.Pointer) {
 }
 ```
 
-###参考文献
+### 参考文献
 
 [golang GC](https://www.cnblogs.com/flippedxyy/p/15558742.html)
 
@@ -897,3 +898,34 @@ func main() {
 简而言之，像切片a通过`a = append(b,c...)`添加数据，如果切片b容量够用，则a和b共享地址； 若切片b容量不够用，则得到的是新切片的大小。
 
 通过更改切片b的第一个元素，可以判断是否共享底层切片
+
+#### 编译器验证接口是否实现
+
+var _ I = (*T)(nil) // Verify that *T implements I.
+
+#### golang interface nil 判断
+
+```go
+
+var val *Temp
+
+// taking a interface
+var val2 interface{}
+
+// val2 is a non-nil interface
+// holding a nil pointer (val)
+val2 = val
+
+fmt.Printf("val2 is a nil interface: %v\n", val2 == nil)
+
+fmt.Printf("val2 is a interface holding a nil"+
+" pointer: %v\n", val2 == (*Temp)(nil))
+fmt.Println(val2.(*Temp)==nil)
+fmt.Println(val2==(*int)(nil))
+```
+
+#### 为什么map，assert，channel可以有不同的返回值个数
+
+[https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values](https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values)
+
+[https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions](https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions)
