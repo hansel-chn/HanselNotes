@@ -243,11 +243,19 @@ func HybridWritePointerSimple(slot *unsafe.Pointer, ptr unsafe.Pointer) {
 
 [1] [https://www.jianshu.com/p/4c5a303af470](https://www.jianshu.com/p/4c5a303af470)
 
-<div id="refer-anchor-1"></div>
+<div id="refer-anchor-2"></div>
 
-[2] [这里图片错误，Yuasa写屏障图片画错，正确应该是将删除的节点上色，图片画成了将指向删除节点的节点上色](https://golang.design/under-the-hood/zh-cn/part2runtime/ch08gc/barrier/)
+[2] [https://www.sobyte.net/post/2021-12/golang-garbage-collector/](https://www.sobyte.net/post/2021-12/golang-garbage-collector/)
 
-个人感觉[[1]](#refer-anchor-1)比较准确，[[2]](#refer-anchor-2)很多内容值得商榷
+<div id="refer-anchor-3"></div>
+
+[3] [https://medium.com/a-journey-with-go/go-how-does-the-garbage-collector-mark-the-memory-72cfc12c6976](https://medium.com/a-journey-with-go/go-how-does-the-garbage-collector-mark-the-memory-72cfc12c6976)
+
+<div id="refer-anchor-4"></div>
+
+[4] [https://golang.design/under-the-hood/zh-cn/part2runtime/ch08gc/barrier/](https://golang.design/under-the-hood/zh-cn/part2runtime/ch08gc/barrier/)
+
+个人感觉，[[4]](#refer-anchor-4)很多内容值得商榷，这里图片错误，Yuasa写屏障图片画错，正确应该是将删除的节点上色，图片画成了将指向删除节点的节点上色
 
 ## var, new and make
 
