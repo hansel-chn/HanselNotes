@@ -801,7 +801,7 @@ func main() {
 
 #### golang .(type)语法
 
-```go
+```
 package main
 
 func value(c Context, key any) any {
@@ -849,7 +849,7 @@ func value(c Context, key any) any {
 * x 的类型是整数或 [] byte 或 [] rune，并且 T 是字符串类型。
 * x 的类型是字符串，T 类型是 [] byte 或 [] rune。
 
-```go
+```
 // * x 可以分配成 T 类型。
 package main
 
@@ -883,7 +883,7 @@ var _ I = (*T)(nil) // Verify that *T implements I.
 
 #### golang interface nil 判断
 
-```go
+```
 
 var val *Temp
 
@@ -912,7 +912,7 @@ fmt.Println(val2==(*int)(nil))
 
 底层原理，个人推测类似[https://go.dev/blog/slices-intro](https://go.dev/blog/slices-intro)中的`AppendByte`
 
-```go
+```
 package main
 
 var a []string
