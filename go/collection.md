@@ -802,30 +802,32 @@ func main() {
 #### golang .(type)语法
 
 ```go
+package main
+
 func value(c Context, key any) any {
-for {
-switch ctx := c.(type) {
-case *valueCtx:
-if key == ctx.key {
-return ctx.val
-}
-c = ctx.Context
-case *cancelCtx:
-if key == &cancelCtxKey {
-return c
-}
-c = ctx.Context
-case *timerCtx:
-if key == &cancelCtxKey {
-return &ctx.cancelCtx
-}
-c = ctx.Context
-case *emptyCtx:
-return nil
-default:
-return c.Value(key)
-}
-}
+	for {
+		switch ctx := c.(type) {
+		case *valueCtx:
+			if key == ctx.key {
+				return ctx.val
+			}
+			c = ctx.Context
+		case *cancelCtx:
+			if key == &cancelCtxKey {
+				return c
+			}
+			c = ctx.Context
+		case *timerCtx:
+			if key == &cancelCtxKey {
+				return &ctx.cancelCtx
+			}
+			c = ctx.Context
+		case *emptyCtx:
+			return nil
+		default:
+			return c.Value(key)
+		}
+	}
 }
 ```
 
@@ -910,20 +912,22 @@ fmt.Println(val2==(*int)(nil))
 
 底层原理，个人推测类似[https://go.dev/blog/slices-intro](https://go.dev/blog/slices-intro)中的`AppendByte`
 
-```
-	var a []string
-	fmt.Println(len(a),cap(a))
-	b:=make([]string,0,10)
-	// b:=make([]string,0)
-	fmt.Println(len(b))
-	fmt.Println(cap(b))
-	b = append(b, "111","222")
-	c:=[]string{"333","444"}
-	a = append(b,c...)
-	b[0]="aaaaaaaaaaa"
-	fmt.Println(a)
-	fmt.Println(cap(a))
-	fmt.Println(len(b))
+```go
+package main
+
+var a []string
+fmt.Println(len(a), cap(a))
+b := make([]string, 0, 10)
+// b:=make([]string,0)
+fmt.Println(len(b))
+fmt.Println(cap(b))
+b = append(b, "111", "222")
+c :=[]string{"333", "444"}
+a = append(b, c...)
+b[0] = "aaaaaaaaaaa"
+fmt.Println(a)
+fmt.Println(cap(a))
+fmt.Println(len(b))
 ```
 
 简而言之，像切片a通过`a = append(b,c...)`添加数据，如果切片b容量够用，则a和b共享地址； 若切片b容量不够用，则得到的是新切片的大小。
