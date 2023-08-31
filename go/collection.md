@@ -875,36 +875,6 @@ func main() {
 
 * 如函数传参
 
-<<<<<<< HEAD
-#### golang切片append
-||||||| fbd6013
-=======
-#### 编译器验证接口是否实现
->>>>>>> f01a1a773d35e49c7610484e1d358f4bc7e43ac8
-
-<<<<<<< HEAD
-底层原理，个人推测类似[https://go.dev/blog/slices-intro](https://go.dev/blog/slices-intro)中的`AppendByte`
-
-```
-	var a []string
-	fmt.Println(len(a),cap(a))
-	b:=make([]string,0,10)
-	// b:=make([]string,0)
-	fmt.Println(len(b))
-	fmt.Println(cap(b))
-	b = append(b, "111","222")
-	c:=[]string{"333","444"}
-	a = append(b,c...)
-	b[0]="aaaaaaaaaaa"
-	fmt.Println(a)
-	fmt.Println(cap(a))
-	fmt.Println(len(b))
-```
-
-简而言之，像切片a通过`a = append(b,c...)`添加数据，如果切片b容量够用，则a和b共享地址； 若切片b容量不够用，则得到的是新切片的大小。
-
-通过更改切片b的第一个元素，可以判断是否共享底层切片
-
 #### 编译器验证接口是否实现
 
 var _ I = (*T)(nil) // Verify that *T implements I.
@@ -935,34 +905,27 @@ fmt.Println(val2==(*int)(nil))
 [https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values](https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values)
 
 [https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions](https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions)
-||||||| fbd6013
-=======
-var _ I = (*T)(nil) // Verify that *T implements I.
 
-####  golang interface nil 判断
+### golang切片append
 
-```go
+底层原理，个人推测类似[https://go.dev/blog/slices-intro](https://go.dev/blog/slices-intro)中的`AppendByte`
 
-var val *Temp
-
-// taking a interface
-var val2 interface{}
-
-// val2 is a non-nil interface
-// holding a nil pointer (val)
-val2 = val
-
-fmt.Printf("val2 is a nil interface: %v\n", val2 == nil)
-
-fmt.Printf("val2 is a interface holding a nil"+
-" pointer: %v\n", val2 == (*Temp)(nil))
-fmt.Println(val2.(*Temp)==nil)
-fmt.Println(val2==(*int)(nil))
+```
+	var a []string
+	fmt.Println(len(a),cap(a))
+	b:=make([]string,0,10)
+	// b:=make([]string,0)
+	fmt.Println(len(b))
+	fmt.Println(cap(b))
+	b = append(b, "111","222")
+	c:=[]string{"333","444"}
+	a = append(b,c...)
+	b[0]="aaaaaaaaaaa"
+	fmt.Println(a)
+	fmt.Println(cap(a))
+	fmt.Println(len(b))
 ```
 
+简而言之，像切片a通过`a = append(b,c...)`添加数据，如果切片b容量够用，则a和b共享地址； 若切片b容量不够用，则得到的是新切片的大小。
 
-#### 为什么map，assert，channel可以有不同的返回值个数
-[https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values](https://stackoverflow.com/questions/36244725/why-map-and-type-assertion-can-return-1-or-2-values)
-
-[https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions](https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions)
->>>>>>> f01a1a773d35e49c7610484e1d358f4bc7e43ac8
+通过更改切片b的第一个元素，可以判断是否共享底层切片
