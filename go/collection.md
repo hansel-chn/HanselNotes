@@ -916,7 +916,7 @@ fmt.Println(val2==(*int)(nil))
 
 [https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions](https://stackoverflow.com/questions/28487036/return-map-like-ok-in-golang-on-normal-functions)
 
-### golang切片append
+## golang切片append
 
 底层原理，个人推测类似[https://go.dev/blog/slices-intro](https://go.dev/blog/slices-intro)中的`AppendByte`
 
@@ -941,3 +941,113 @@ fmt.Println(len(b))
 简而言之，像切片a通过`a = append(b,c...)`添加数据，如果切片b容量够用，则a和b共享地址； 若切片b容量不够用，则得到的是新切片的大小。
 
 通过更改切片b的第一个元素，可以判断是否共享底层切片
+
+## golang time包
+
+```
+package time
+// Monotonic times are reported as offsets from startNano.
+// We initialize startNano to runtimeNano() - 1 so that on systems where
+// monotonic time resolution is fairly low (e.g. Windows 2008
+// which appears to have a default resolution of 15ms),
+// we avoid ever reporting a monotonic time of 0.
+// (Callers may want to use 0 as "time not set".)
+var startNano int64 = runtimeNano() - 1
+
+// Now returns the current local time.
+func Now() Time {
+	sec, nsec, mono := now()  // sec - Unix 时间戳（自 1970.1.1 起的秒数）
+	mono -= startNano
+	sec += unixToInternal - minWall  // sec int64 自 1885.1.1 起的秒数
+	if uint64(sec)>>33 != 0 {
+		return Time{uint64(nsec), sec + minWall, Local}
+	}
+	return Time{hasMonotonic | uint64(sec)<<nsecShift | uint64(nsec), mono, Local}
+}
+```
+
+now 函数的三个返回值分别为：当前挂钟时间的 unix 时间戳的秒、纳秒部分，以及以纳秒为单位的单调时间
+
+wall 的第二部分（`uint64(sec)<<nsecShift`, 33 位）对应秒，最大值为 8589934591 秒，约 272.4 年，自 1885.1.1 起可用到 2157
+年。当时间位于2157年某个时间节点前后采用两种不同的存储方式(hasMonotonic = 0或1)
+，单调时钟一定程度上解决时钟回拨问题，但是若主机重启且发生时钟同步NTP，有可能仍然发生始终回拨，单调时间基于底层如（CLOCK_MONOTONIC）从开机开始计算。
+
+### time包注意事项
+
+* 在进行`time.Parse`时，一定要注意`layout`格式，否则会出现各种各样的格式不匹配报错问题，time包将固定的字符串作为特殊的标志如`Z07:00`,`-07:00`。
+    * 是否带有地区
+    * 如果自己编写layout的格式问题，详见文档。如
+        * layout区域表示(正确：`Z07:00`,`-07:00`等,而不能随意表示为自定义字符串；错误：`+08:00`，会被认为是固定字符串，非时间区域)。
+        * layout时间表示需要按照`2006-01-02T15:04:05-07:00`日期值设置映射，猜想做了特殊处理，实际使用随意日期时会时不时发生err(有时准确有时不准确)
+* ParseInLocation vs Parse
+    * 若传入的value包含时区
+        * `Parse`试图与本地时区采用不同记录方式，`ParseInLocation`解释为给定时区`loc`
+          > Parse: When parsing a time with a zone offset like -0700, if the offset corresponds to a time zone used by the current location (Local), then Parse uses that location and zone in the returned time. Otherwise it records the time as being in a fabricated location with time fixed at the given zone offset.
+
+          不知道可不可以理解location是具体地址如`"Asia/Tokyo"`,zone指时区如`+0800`
+    * 若传入的value不包含时区
+        * `Parse`解释为UTC，`ParseInLocation`解释为给定时区`loc`
+
+```
+    timeStr := "2023-08-30T14:45:22+08:00"
+
+    // correct
+	parse1, err := time.Parse(time.RFC3339, timeStr)                    // 2023-08-30 14:45:22 +0800 CST
+	parse2, err := time.Parse("2006-01-02T15:04:05-07:00", timeStr)     // 2023-08-30 14:45:22 +0800 CST
+	parse3, err := time.Parse("2006-01-02T15:04:05Z07:00", timeStr)     // 2023-08-30 14:45:22 +0800 CST
+	
+	// fault
+	parse4, err := time.ParseInLocation("2006-01-02T15:04:05-07:00", timeStr, loc)  // 2023-08-30 14:45:22 +0800 +0800
+	parse5, err := time.Parse("2006-01-02T15:04:05+08:00", timeStr)                 // +08:00这种表示错误，会被当成固定字符串而非zone
+
+    // Parse tries to match it against the Local location
+    timeStr = "2023-08-30T14:45:22+04:00"
+    parse6, err := time.Parse(time.RFC3339, timeStr)     // 2023-08-30 14:45:22 +0400 +0400 | 由于和本地时区不对应，解释成+0400，非类似CST的表达
+    
+    // ParseInLocation
+    loc, _ = time.LoadLocation("Asia/Tokyo")
+	parse5, err := time.ParseInLocation("2006-01-02T15:04:05-07:00", timeStr, loc) // 2023-08-30 14:45:22 +0400 +0400 | 貌似也不是直接转换时区
+	
+	loc, _ := time.LoadLocation("Europe/Berlin")
+	const longForm = "Jan 2, 2006 at 3:04pm (MST)" 
+	t, _ := time.ParseInLocation(longForm, "Jul 9, 2012 at 5:02am (CEST)", loc) // 2012-07-09 05:02:00 +0200 CEST | 官方例子，感觉逻辑类似上面Parse逻辑，时区对应上才展示CEST，对文档说明不太一样？
+```
+
+### 瞎想
+
+其中,`uint64(sec)>>33 != 0`通过将sec转化为uint64类型进行位运算，排除大于2<sup>34</sup>-1的数(其实还有小于0的数，负数以补码形式存储，类型转换为uint并未更改底层数据)
+
+以`int8`为例,强转`uint8`后， 由于负数以补码形式存在，对应的上下边界为:
+
+| 十进制数 |   内存补码   | `uint`类型代表无符号整数 |
+|:----:|:--------:|:---------------:|
+| -128 | 10000000 |       128       |
+|  -1  | 11111111 |       255       |
+
+希望：值小于64（不包括64）且大于0，右移6位，判断值是否不等于0
+> 好像也没什么意义，负数必定越界的<br>
+> `uint64(sec)`不知道为什么这么做，逻辑更清晰？其实，就算存在负值，右移也不等于0
+
+[https://juejin.cn/post/6890889801600335886](https://juejin.cn/post/6890889801600335886)
+
+[https://www.jianshu.com/p/896cc3f4ee82?utm_campaign=studygolang.com&utm_medium=studygolang.com&utm_source=studygolang.com](https://www.jianshu.com/p/896cc3f4ee82?utm_campaign=studygolang.com&utm_medium=studygolang.com&utm_source=studygolang.com)
+
+## 针对为什么int8类型,10000000代表-128，从计算机处理的角度思考
+
+同余不能解释为什么不是+128，从计算机设计的角度更容易思考。
+
+
+> // 考虑4-bit integers<br>
+> // 计算机是如下表述内存中补码和负数整数的关系的<br>
+> 1110 = -2<sup>3</sup> + 2<sup>2</sup> + 2<sup>1</sup> + 0 * 2<sup>0</sup> = -2<br>
+> 0111 = -2<sup>3</sup> * 0 + 2<sup>2</sup>  + 2<sup>1</sup> + 2<sup>0</sup> = 7<br>
+> 1001 = -2<sup>3</sup> + 0 * 2<sup>2</sup>  + 0 * 2<sup>1</sup> + 2<sup>0</sup> = -7<br>
+>
+> // 考虑8-bit integers<br>
+> 10000000 = -2<sup>7</sup> + 0 + 0 + 0 + 0 + 0 + 0 + 0= -128 (and not 128)<br>
+
+[https://stackoverflow.com/questions/49044828/how-does-a-computer-know-that-a-twos-complement-number-is-negative](https://stackoverflow.com/questions/49044828/how-does-a-computer-know-that-a-twos-complement-number-is-negative)
+
+[负数取余 https://blog.csdn.net/qq_43152052/article/details/101023628](https://blog.csdn.net/qq_43152052/article/details/101023628)
+
+## 左值and右值
