@@ -259,7 +259,7 @@ func HybridWritePointerSimple(slot *unsafe.Pointer, ptr unsafe.Pointer) {
 
 ## var, new and make
 
-[var, new and make](./var,%20new%20and%20make.go)
+[var, new and make](./tools/var,%20new%20and%20make.go)
 
 ## Golang 深浅拷贝
 
@@ -390,7 +390,7 @@ itab这个struct的定义如下:
 [https://www.zhihu.com/question/23277575](https://www.zhihu.com/question/23277575)
 
 [https://www.jianshu.com/p/07af9dbbbc4b](https://www.jianshu.com/p/07af9dbbbc4b)
-![IOC,DI,DIP关系](./ioc.png "IOC,DI,DIP关系")
+![IOC,DI,DIP关系](./img/ioc.png "IOC,DI,DIP关系")
 
 * Inversion of Control 思考java的ioc容器，对象的控制权上交ioc容器。原先A依赖B需要主动创建B,现在通过IOC容器将对象B注入对象A
 * Dependency Injection (DI)  依赖注入(DI)模式是IoC模式的一个更具体的版本，实现通过constructors/setters/Interface ，对象将“依赖”这些以正确地行为。
@@ -681,7 +681,7 @@ task_struct地址的原因。每次在进程从用户空间进入系统空间之
     * 中心化的注册与调度（类似nginx）；
     * 独立注册服务，采用中心注册服务，中心拥有最新路由表，各服务侧实现负载均衡（服务实例和调度未分开）
     * Service Mesh 将服务实例和调度分开，注册调度由组件实现
-      ![img.png](img.png)
+      ![img.png](./img/img.png)
     * 每个服务机器上都部署一个 Proxy 模式的 etcd，这样就可以确保能访问 etcd 集群的服务都能互相连接。
 
 > etcd
