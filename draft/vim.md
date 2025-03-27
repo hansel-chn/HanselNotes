@@ -1,4 +1,3 @@
 # Vim
 
-## 替换每行最后一个日期，在sql语句中
-如`44,60s/\d',\s\zs.*\ze'`
+* [uncommon but useful commands in vim](https://www.reddit.com/r/vim/comments/yh5wrr/what_are_uncommon_but_useful_vim_commands/)
