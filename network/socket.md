@@ -6,7 +6,8 @@
 
 1. tcp_v4_rcv 中首先根据收到的网络包的 header 里的 source 和 dest 信息来在本机上查询对应的 socket。
 2. 调用 tcp_queue_rcv 函数中完成了将接收数据放到 socket 的接收队列上。
-3. 接收完成，调用sock_def_readable，sock_def_readable判断等待队列不为空，执行等待队列上的函数ep_poll_callback，ep_poll_callback 根据等待任务队列项上的额外的 base
+3. 接收完成，调用sock_def_readable，sock_def_readable判断等待队列不为空，执行等待队列上的函数ep_poll_callback，ep_poll_callback
+   根据等待任务队列项上的额外的 base
    指针可以找到 epitem， 进而也可以找到 eventpoll对象。
 4. 把自己的 epitem 添加到 epoll 的就绪队列rdllist中。
 5. 接着它又会查看 eventpoll 对象上的等待队列里是否有等待项（epoll_wait 执行的时候会设置）。
@@ -23,15 +24,19 @@
 [https://developer.aliyun.com/article/1097552](https://developer.aliyun.com/article/1097552)
 
 * epoll_create先创建一个epoll实例，返回一个指向该实例的文件描述符。这个epoll实例内部存储了一个红黑树和双向链表，红黑树包括了所有待监听的文件描述符，双向链表存储了事件就绪的文件描述符。
-* epoll_ctl（control缩写ctl，功能有点像select中 fdset的几个api（添加要监听的文件描述符））将待监听的文件描述符加入epoll实例的监听列表中，当事件准备就绪，中断程序将文件描述符添加到就绪链表中。
+* epoll_ctl（control缩写ctl，功能有点像select中
+  fdset的几个api（添加要监听的文件描述符））将待监听的文件描述符加入epoll实例的监听列表中，当事件准备就绪，中断程序将文件描述符添加到就绪链表中。
 * epoll_wait功能相当于select，检查就绪队列，为空阻塞，不为空返回
 
 [最全面epoll](https://cloud.tencent.com/developer/news/787829)
-在 epoll_ctl 中首先根据传入 fd 找到 eventpoll、socket相关的内核对象 。对于 EPOLL_CTL_ADD 操作来说，会然后执行到 ep_insert 函数。所有的注册都是在这个函数中完成的。 对于每一个
+在 epoll_ctl 中首先根据传入 fd 找到 eventpoll、socket相关的内核对象 。对于 EPOLL_CTL_ADD 操作来说，会然后执行到 ep_insert
+函数。所有的注册都是在这个函数中完成的。 对于每一个
 socket，调用 epoll_ctl 的时候，都会为之分配一个 epitem。
 
-epoll_ctl过程中， 在 ep_ptable_queue_proc 函数中，新建了一个等待队列项，并注册其回调函数为 ep_poll_callback 函数。然后再将这个等待项添加到 socket
-的等待队列中。<font color=LightCoral>在socket等待队列注册了回调函数，使得数据就绪时可以将文件描述符加入epoll实例的就绪链表</font>
+epoll_ctl过程中， 在 ep_ptable_queue_proc 函数中，新建了一个等待队列项，并注册其回调函数为 ep_poll_callback 函数。然后再将这个等待项添加到
+socket
+的等待队列中。<font color=LightCoral>
+在socket等待队列注册了回调函数，使得数据就绪时可以将文件描述符加入epoll实例的就绪链表</font>
 
 epoll 到底用没用到 mmap？ 没有
 
@@ -61,7 +66,8 @@ linux目前异步io支持的不好，多路复用能解决大部分问题，折�
 
 操作系统针对不同的传输方式（TCP，UDP）会在内核中各自维护一个Socket双向链表，当数据包到达网卡时，会根据数据包的源端口，源ip，目的端口从对应的链表中找到其对应的Socket，并会将数据拷贝到Socket的缓冲区，等待应用程序读取。
 
-socket 的本质是一种资源，它包含了端到端的四元组信息，用来标识数据包的归属。因此，尽管 tcp 协议的端口号只有 65535 个，但是进程可拥有的 socket 数据却不限于此（受限于进程最大文件描述符数据）；
+socket 的本质是一种资源，它包含了端到端的四元组信息，用来标识数据包的归属。因此，尽管 tcp 协议的端口号只有 65535 个，但是进程可拥有的
+socket 数据却不限于此（受限于进程最大文件描述符数据）；
 
 ## 一致性哈希
 
@@ -86,3 +92,59 @@ socket 的本质是一种资源，它包含了端到端的四元组信息，用�
 资源效率：使用多路复用可以将多个 I/O 事件集中在一个线程或进程中处理，避免了创建大量线程或进程的开销。
 
 非阻塞I/O方式需要不断轮询，会消耗大量CPU时间，而后台又可能有多个任务在同时轮询：所以在一个进程循环查询多个任务的完成状态，只要有任何一个任务完成，就去处理它
+
+### Comparison: `poll` vs `epoll`
+
+#### 1. **File Descriptor Management**
+
+- **`poll`**:
+    - Requires the user to pass the entire list of file descriptors to the kernel on every call.
+    - The kernel must iterate through all file descriptors to check their status.
+- **`epoll`**:
+    - Uses a persistent data structure in the kernel (a red-black tree and a ready list).
+    - File descriptors are registered once using `epoll_ctl`, and only events are checked during `epoll_wait`.
+
+#### 2. **Performance**
+
+- **`poll`**:
+    - Time complexity is \(O(N)\), as it must iterate through all file descriptors for every call.
+    - Performance degrades significantly with a large number of file descriptors.
+- **`epoll`**:
+    - Time complexity is \(O(1)\) for event notification, as it only processes ready file descriptors.
+    - Scales well with a large number of file descriptors.
+
+#### 3. **Event Notification**
+
+- **`poll`**:
+    - Uses a linear array to store file descriptors and their events.
+    - Does not differentiate between active and inactive file descriptors.
+- **`epoll`**:
+    - Maintains a ready list of file descriptors with events.
+    - Supports both **level-triggered (LT)** and **edge-triggered (ET)** modes, making it more efficient for
+      high-performance applications.
+
+#### 4. **Memory Usage**
+
+- **`poll`**:
+    - Requires copying the file descriptor list between user space and kernel space on every call.
+- **`epoll`**:
+    - File descriptors are stored in the kernel after registration, reducing memory copying overhead.
+
+#### 5. **Concurrency**
+
+- **`poll`**:
+    - Not inherently designed for multithreaded environments.
+- **`epoll`**:
+    - Better suited for multithreaded applications, as it allows multiple threads to wait on the same `epoll` instance.
+
+#### 6. **Use Case**
+
+- **`poll`**:
+    - Suitable for a small number of file descriptors or legacy systems.
+- **`epoll`**:
+    - Ideal for high-concurrency applications with a large number of file descriptors, such as web servers.
+
+### Summary
+
+`epoll` is more efficient and scalable than `poll`, especially in scenarios with a large number of file descriptors or
+high concurrency. It is the preferred choice for modern, high-performance applications.
