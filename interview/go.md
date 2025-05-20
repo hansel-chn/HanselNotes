@@ -588,3 +588,22 @@ like **`sync.Mutex`**, **`sync.Cond`**, and **atomic operations**. Here's how it
 - It balances goroutines across multiple threads (M) and processors (P) to maximize concurrency.
 
 This combination of atomic operations, semaphores, and the scheduler ensures efficient and fair lock management in Go.  
+
+## How to solve the deadlock problem
+解决死锁问题可以从以下几个方面入手：
+
+### 1. **避免死锁**
+- **资源有序分配**: 确保所有线程按照相同的顺序获取锁，避免循环依赖。
+- **尝试锁超时**: 使用带超时的锁机制（如 `TryLock`），避免线程无限等待。
+- **减少锁的粒度**: 尽量减少锁的持有时间，降低锁的竞争。
+- **分布式锁协调**: 在分布式系统中，使用分布式锁（如 Redis 或 Zookeeper）来协调资源访问。
+
+### 2. **检测死锁**
+- **数据库死锁检测**: 数据库（如 MySQL）会自动检测死锁并返回错误（如 `Error 1213`）。
+- **日志分析**: 通过分析程序日志，定位死锁发生的代码路径。
+- **工具检测**: 使用调试工具（如 Go 的 `pprof` 或 `trace`）分析 Goroutine 的状态。
+
+### 3. **解决死锁**
+- **重试机制**: 在检测到死锁后，回滚事务并重试操作。
+- **分解任务**: 将长时间持有锁的任务分解为多个小任务，减少锁的竞争。
+- **锁顺序优化**: 调整锁的获取顺序，避免循环依赖。
