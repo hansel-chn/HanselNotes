@@ -341,19 +341,23 @@ max := 100
 
 ## ch <- struct{}{} ready = true // Potentially unsafe modification 编译器不会使两条命令有可能不按照顺序执行？
 
-Yes, without proper synchronization, the compiler or CPU may reorder these instructions for optimization purposes, which
+~~Yes, without proper synchronization, the compiler or CPU may reorder these instructions for optimization purposes, which
 could lead to unexpected behavior in concurrent programs. This is because Go, like many modern programming languages,
-allows instruction reordering as long as it does not violate the program's single-threaded semantics.
+allows instruction reordering as long as it does not violate the program's single-threaded semantics.~~
 
-In your example:
+~~In your example:~~
 
 ```go
 ch <- struct{}{}
 ready = true // Potentially unsafe modification
 ```
 
-If another goroutine reads `ready` after receiving from the channel, it might observe `ready` as `false` because the
-write to `ready` could be reordered to occur after the channel send operation.
+~~If another goroutine reads `ready` after receiving from the channel, it might observe `ready` as `false` because the
+write to `ready` could be reordered to occur after the channel send operation.~~
+
+https://go101.org/article/memory-model.html
+channel 有条件的保证了指令顺序
+比如说有第三个协程，不存在对应channel，仍然会出现问题
 
 ### How to Prevent Reordering
 

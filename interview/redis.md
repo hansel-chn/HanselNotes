@@ -96,6 +96,7 @@ ziplist 设计出的紧凑型数据块可以有效利用内存，但在更新上
 红黑树相比普通平衡二叉树（如AVL树）的主要优点在于其旋转次数较少，以下是原因和优点的具体分析：
 
 ## 红黑树vs平衡二叉树
+
 ### 1. **旋转次数少的原因**
 
 - **红黑树**：
@@ -127,3 +128,63 @@ ziplist 设计出的紧凑型数据块可以有效利用内存，但在更新上
 ### 总结
 
 红黑树通过放宽平衡条件，减少了插入和删除时的旋转次数，提升了写操作的效率，同时实现复杂度较低，适合写多读少的场景。相比之下，AVL树的严格平衡性使其在读操作性能上稍优，但写操作开销较大。
+
+## 并发访问的key数量很多，因为更新问题每个都加上锁，不会损耗很多空间吗
+
+在高并发场景下，为每个 key 加锁确实可能会增加一定的内存开销，但这种开销通常是可控的。以下是一些优化策略，可以减少空间和性能损耗：
+
+### 1. **使用分段锁（Shard Locking）**
+
+- 将 key 分组，每组使用一个锁，而不是为每个 key 单独创建锁。
+- 通过哈希函数将 key 映射到特定的锁，从而减少锁的数量。
+
+示例代码：
+
+```go
+package main
+
+import (
+	"fmt"
+	"hash/fnv"
+	"sync"
+)
+
+const shardCount = 16
+
+type ShardedLock struct {
+	locks [shardCount]sync.Mutex
+}
+
+func (s *ShardedLock) getLock(key string) *sync.Mutex {
+	hash := fnv.New32a()
+	hash.Write([]byte(key))
+	return &s.locks[hash.Sum32()%shardCount]
+}
+
+func main() {
+	shardedLock := &ShardedLock{}
+
+	key := "exampleKey"
+	lock := shardedLock.getLock(key)
+
+	lock.Lock()
+	fmt.Println("Locked for key:", key)
+	lock.Unlock()
+	fmt.Println("Unlocked for key:", key)
+}
+```
+
+### 2. **使用 Redis 分布式锁**
+
+- 如果锁的粒度需要更细，可以使用 Redis 分布式锁（如 `SETNX` 或 `Redlock`），避免在本地内存中存储大量锁。
+
+### 3. **锁的生命周期管理**
+
+- 确保锁的生命周期尽可能短，避免长时间持有锁。
+- 使用锁的过期时间（如 Redis 锁的 TTL）来防止死锁。
+
+### 4. **批量操作**
+
+- 如果多个 key 的更新可以合并，尝试批量操作，减少锁的数量和频率。
+
+通过这些优化，可以有效减少锁的空间和性能开销，同时保证并发访问的正确性。
