@@ -128,3 +128,25 @@ COMMIT;
   committed.
 
 To avoid this, you must explicitly lock the range using `FOR UPDATE` or use the `SERIALIZABLE` isolation level.
+
+## mysql 可重复读和读已提交在更新数据时加的锁一样吗
+
+Yes, RabbitMQ's publish/subscribe model can lead to additional memory usage due to message duplication. Here's why:
+
+1. **Message Duplication in Queues**:
+    - When a message is published to an exchange (e.g., a `fanout` exchange), it is routed to all bound queues.
+    - Each queue stores its own copy of the message until it is consumed by a subscriber.
+    - This means that if a message is routed to multiple queues, RabbitMQ will store multiple copies of the message in
+      memory or on disk (depending on the queue's configuration).
+
+2. **Impact on Memory**:
+    - The more queues a message is routed to, the more memory (or disk space) RabbitMQ will use to store the message.
+    - This can increase memory usage significantly in scenarios with many queues or high message throughput.
+
+3. **Mitigation**:
+    - Use efficient queue bindings to minimize unnecessary message routing.
+    - Enable message expiration (`x-message-ttl`) to automatically remove messages from queues after a certain time.
+    - Use disk-backed queues for large-scale systems to reduce memory pressure.
+
+In summary, RabbitMQ does not share a single message instance across multiple queues; instead, it creates separate
+copies for each queue, which can lead to additional memory usage.

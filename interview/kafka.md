@@ -110,17 +110,29 @@ https://github.com/h2pl/JavaTutorial/blob/master/docs/mq/kafka/%E6%B6%88%E6%81%A
 重点：https://zhuanlan.zhihu.com/p/616105519  上下文的切换和内存的copy带来的问题
 
 > mmap + write
-通过使用 mmap() 来代替 read()， 可以减少一次数据拷贝的过程。
-但这还不是最理想的零拷贝，因为仍然需要通过 CPU 把内核缓冲区的数据拷贝到 socket 缓冲区里，而且仍然需要 4 次上下文切换，因为系统调用还是
-2 次。
+> 通过使用 mmap() 来代替 read()， 可以减少一次数据拷贝的过程。
+> 但这还不是最理想的零拷贝，因为仍然需要通过 CPU 把内核缓冲区的数据拷贝到 socket 缓冲区里，而且仍然需要 4 次上下文切换，因为系统调用还是
+> 2 次。
 
 > sendfile
-于是，从 Linux 内核 2.4 版本开始起，对于支持网卡支持 SG-DMA 技术的情况下， sendfile() 系统调用的过程发生了点变化，具体过程如下：
-第一步，通过 DMA 将磁盘上的数据拷贝到内核缓冲区里；
-第二步，缓冲区描述符和数据长度传到 socket 缓冲区，这样网卡的 SG-DMA 控制器就可以直接将内核缓存中的数据拷贝到网卡的缓冲区里，此过程不需要将数据从操作系统内核缓冲区拷贝到
-socket 缓冲区中，这样就减少了一次数据拷贝；
+> 于是，从 Linux 内核 2.4 版本开始起，对于支持网卡支持 SG-DMA 技术的情况下， sendfile() 系统调用的过程发生了点变化，具体过程如下：
+> 第一步，通过 DMA 将磁盘上的数据拷贝到内核缓冲区里；
+> 第二步，缓冲区描述符和数据长度传到 socket 缓冲区，这样网卡的 SG-DMA 控制器就可以直接将内核缓存中的数据拷贝到网卡的缓冲区里，此过程不需要将数据从操作系统内核缓冲区拷贝到
+> socket 缓冲区中，这样就减少了一次数据拷贝；
 
 sendfile减少了文件拷贝次数和上下文的切换
 
 Linux 2.4+ 内核通过 sendfile 系统调用，提供了零拷贝。磁盘数据通过 DMA(Direct Memory Access) 拷贝到内核态 Buffer 后，直接通过
 DMA 拷贝到 NIC Buffer(socket buffer)，无需 CPU 拷贝。
+
+## ISR
+
+Replication: Messages are replicated across multiple brokers. If a broker fails, replicas ensure data availability.
+acks Configuration:
+acks=all: The producer waits for all in-sync replicas (ISR) to acknowledge the message before considering it
+successfully sent.
+Combined with min.insync.replicas, this ensures a minimum number of replicas acknowledge the message.
+
+(
+这个标准就是Broker端参数replica.lag.time.max.ms参数值。这个参数的含义是Follower副本能够落后Leader副本的最长时间间隔，当前默认值是10秒。这就是说，只要一个Follower副本落后Leader副本的时间不连续超过10秒，那么Kafka就认为该Follower副本与Leader是同步的，即使此时Follower副本中保存的消息明显少于Leader副本中的消息。
+我们在前面说过，Follower副本唯一的工作就是不断地从Leader副本拉取消息，然后写入到自己的提交日志中。如果这个同步过程的速度持续慢于Leader副本的消息写入速度，那么在replica.lag.time.max.ms时间后，此Follower副本就会被认为是与Leader副本不同步的，因此不能再放入ISR中。此时，Kafka会自动收缩ISR集合，将该副本“踢出”ISR。)
