@@ -10,7 +10,7 @@
 
 kafka消息丢失之类设置详细
 
-##             
+##              
 
 认识更加厉害的人，处理很多事情
 
@@ -263,3 +263,51 @@ mysql
 ## 零信任
 
 永不信任，始终验证
+
+敏感词检测的准确率评估通常从以下几个维度进行衡量：
+
+## 敏感词检测准确率
+
+### 1. **准确率 (Precision)**
+
+- 定义：在所有被检测为敏感词的结果中，实际是敏感词的比例。
+- 公式：`Precision = True Positives / (True Positives + False Positives)`
+- 作用：衡量检测结果的准确性，避免误报（False Positives）。
+
+### 2. **召回率 (Recall)**
+
+- 定义：在所有实际存在的敏感词中，被正确检测出的比例。
+- 公式：`Recall = True Positives / (True Positives + False Negatives)`
+- 作用：衡量检测的覆盖率，避免漏报（False Negatives）。
+
+### 3. **F1-Score**
+
+- 定义：准确率和召回率的调和平均值。
+- 公式：`F1 = 2 * (Precision * Recall) / (Precision + Recall)`
+- 作用：综合评估检测的准确性和覆盖率，适用于需要平衡误报和漏报的场景。
+
+### 4. **误报率 (False Positive Rate)**
+
+- 定义：在所有非敏感词中，被错误检测为敏感词的比例。
+- 公式：`False Positive Rate = False Positives / (False Positives + True Negatives)`
+- 作用：衡量系统对非敏感词的误判情况。
+
+### 5. **漏报率 (False Negative Rate)**
+
+- 定义：在所有实际存在的敏感词中，未被检测出的比例。
+- 公式：`False Negative Rate = False Negatives / (True Positives + False Negatives)`
+- 作用：衡量系统对敏感词的漏检情况。
+
+### 6. **检测速度**
+
+- 定义：系统在单位时间内处理的文本量或检测的敏感词数量。
+- 作用：评估系统的性能和实时性。
+
+### 7. **覆盖率**
+
+- 定义：系统内置的敏感词库是否全面覆盖目标领域的敏感词。
+- 作用：衡量系统对不同领域敏感词的适配能力。
+
+通过综合这些维度，可以全面评估敏感词检测系统的性能和适用性。
+## 随笔
+定时更新，版本号校验解决一致性问题

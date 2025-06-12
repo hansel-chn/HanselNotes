@@ -150,3 +150,108 @@ Yes, RabbitMQ's publish/subscribe model can lead to additional memory usage due 
 
 In summary, RabbitMQ does not share a single message instance across multiple queues; instead, it creates separate
 copies for each queue, which can lead to additional memory usage.
+
+## mysql slow queries
+
+A large number of slow queries in a database can lead to several issues, including:
+
+### 1. **Increased Latency**
+
+- Slow queries consume significant resources, causing delays in processing other queries.
+- This can lead to higher response times for applications relying on the database.
+
+### 2. **High CPU Usage**
+
+- Complex or unoptimized queries can cause the database server's CPU usage to spike, reducing overall performance.
+
+### 3. **High Disk I/O**
+
+- Slow queries often involve large table scans or excessive reads/writes, leading to increased disk I/O.
+- This can degrade performance for other operations requiring disk access.
+
+### 4. **Lock Contention**
+
+- Slow queries may hold locks on tables or rows for extended periods, causing contention and blocking other queries.
+
+### 5. **Memory Usage**
+
+- Slow queries may consume a large amount of memory for sorting, joining, or caching intermediate results, potentially
+  leading to memory exhaustion.
+
+### 6. **Connection Pool Exhaustion**
+
+- If slow queries occupy database connections for too long, the connection pool may be exhausted, preventing new queries
+  from being executed.
+
+### 7. **Deadlocks**
+
+- Slow queries can increase the likelihood of deadlocks, especially in high-concurrency environments.
+
+### 8. **Increased Query Timeout Errors**
+
+- Applications may experience query timeouts if slow queries prevent timely execution of other requests.
+
+### 9. **Degraded User Experience**
+
+- End users may experience delays or errors in applications due to the database's inability to handle requests
+  efficiently.
+
+### 10. **Potential System Crashes**
+
+- Prolonged resource exhaustion (CPU, memory, or disk) caused by slow queries can lead to database server crashes.
+
+To mitigate these issues, consider:
+
+- Optimizing slow queries (e.g., adding indexes, rewriting queries).
+- Monitoring and analyzing slow query logs.
+- Scaling the database (e.g., sharding, replication).
+- Using caching mechanisms to reduce database load.
+
+## mysql一般每秒可以支持多少查询，单机配置
+
+The number of queries per second (QPS) that a MySQL database can handle on a single machine depends on several factors,
+including hardware resources, query complexity, and MySQL configuration. Below are the key considerations:
+
+### 1. **Hardware Resources**
+
+- **CPU**: More cores allow better parallel query execution. Modern multi-core CPUs can handle thousands of queries per
+  second.
+- **Memory**: Sufficient memory is required for caching and query execution. For example:
+    - 8 GB RAM: Suitable for small workloads.
+    - 16-32 GB RAM: Suitable for medium to large workloads.
+- **Disk I/O**: High-performance SSDs are recommended for handling high read/write operations.
+
+### 2. **Query Complexity**
+
+- **Simple Queries**: Key-value lookups or indexed queries can handle tens of thousands of QPS.
+- **Complex Queries**: Joins, aggregations, or unindexed queries significantly reduce QPS.
+
+### 3. **MySQL Configuration**
+
+- **`innodb_buffer_pool_size`**: Set to 70-80% of available memory for optimal InnoDB performance.
+- **`query_cache_size`**: Use caching for frequently accessed data (or external caching like Redis).
+- **`max_connections`**: Ensure sufficient connections are allowed for concurrent queries.
+
+### 4. **Workload Type**
+
+- **Read-Heavy Workloads**: Can achieve higher QPS with proper indexing and caching.
+- **Write-Heavy Workloads**: Limited by disk I/O and transaction overhead.
+
+### 5. **Practical Estimates**
+
+- **Small Server (4 cores, 8 GB RAM)**: ~5,000-10,000 QPS for simple queries.
+- **Medium Server (8 cores, 32 GB RAM)**: ~20,000-50,000 QPS for simple queries.
+- **Large Server (16+ cores, 64+ GB RAM)**: ~100,000+ QPS for simple queries.
+
+### 6. **Load Testing**
+
+To determine the exact QPS for your setup, perform load testing using tools like `sysbench` or `JMeter`.
+
+### Example: `sysbench` Command for Load Testing
+
+```bash
+sysbench --db-driver=mysql --mysql-host=127.0.0.1 --mysql-user=root --mysql-password=your_password \
+--mysql-db=test --threads=16 --time=60 --report-interval=10 oltp_read_only run
+```
+
+This will simulate a read-only workload and provide QPS metrics for your MySQL instance.

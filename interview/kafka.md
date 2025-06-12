@@ -136,3 +136,141 @@ Combined with min.insync.replicas, this ensures a minimum number of replicas ack
 (
 这个标准就是Broker端参数replica.lag.time.max.ms参数值。这个参数的含义是Follower副本能够落后Leader副本的最长时间间隔，当前默认值是10秒。这就是说，只要一个Follower副本落后Leader副本的时间不连续超过10秒，那么Kafka就认为该Follower副本与Leader是同步的，即使此时Follower副本中保存的消息明显少于Leader副本中的消息。
 我们在前面说过，Follower副本唯一的工作就是不断地从Leader副本拉取消息，然后写入到自己的提交日志中。如果这个同步过程的速度持续慢于Leader副本的消息写入速度，那么在replica.lag.time.max.ms时间后，此Follower副本就会被认为是与Leader副本不同步的，因此不能再放入ISR中。此时，Kafka会自动收缩ISR集合，将该副本“踢出”ISR。)
+
+## kafka能设置面向不同topic采用不同的消息投递语义吗，从而达到一些允许消息丢失一些允许消息丢失吗
+
+Yes, Kafka can be configured to use different delivery semantics (at-most-once, at-least-once, or exactly-once) for
+different topics. This can be achieved by configuring the producer and consumer settings on a per-topic basis. Here's
+how:
+
+### 1. **Producer Configuration**
+
+The producer's delivery semantics depend on the following settings:
+
+- **`acks`**: Controls the acknowledgment behavior.
+    - `acks=0`: At-most-once (messages may be lost).
+    - `acks=1`: At-least-once (default, messages may be lost if the leader fails after acknowledgment but before
+      replication).
+    - `acks=all`: At-least-once with stronger durability guarantees (requires all replicas to acknowledge).
+- **`retries`**: Number of retries for failed sends. Set to `0` for at-most-once semantics.
+- **`enable.idempotence`**: Set to `true` for exactly-once semantics (requires `acks=all`).
+
+You can configure these settings differently for each producer instance based on the topic.
+
+### 2. **Consumer Configuration**
+
+The consumer's delivery semantics depend on:
+
+- **`enable.auto.commit`**: Controls whether offsets are committed automatically.
+    - `true`: At-least-once (default, offsets are committed automatically after processing).
+    - `false`: At-most-once or exactly-once (manual offset management is required).
+- **Manual Offset Commit**: For exactly-once, commit offsets only after processing is complete.
+
+### Example: Configuring Different Semantics for Topics
+
+Below is an example in Go using the `sarama` Kafka client library:
+
+```go
+package main
+
+import (
+	"log"
+	"github.com/Shopify/sarama"
+)
+
+func createProducer(topic string, allowLoss bool) sarama.SyncProducer {
+	config := sarama.NewConfig()
+	if allowLoss {
+		// At-most-once semantics
+		config.Producer.RequiredAcks = sarama.NoResponse
+		config.Producer.Retry.Max = 0
+	} else {
+		// At-least-once semantics
+		config.Producer.RequiredAcks = sarama.WaitForAll
+		config.Producer.Retry.Max = 5
+		config.Producer.Idempotent = true // For exactly-once
+	}
+
+	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, config)
+	if err != nil {
+		log.Fatalf("Failed to create producer: %v", err)
+	}
+	return producer
+}
+
+func main() {
+	// Example: Topic1 allows message loss, Topic2 does not
+	producer1 := createProducer("Topic1", true)
+	producer2 := createProducer("Topic2", false)
+
+	defer producer1.Close()
+	defer producer2.Close()
+
+	// Send messages to Topic1 and Topic2
+	// ...
+}
+```
+
+### Summary
+
+By configuring the producer and consumer settings differently for each topic, you can achieve different delivery
+semantics for different topics in Kafka.
+
+## 怎么知道kafka消费不及时积累数据
+
+要判断 Kafka 消费是否不及时并导致数据积累，可以通过以下方法：
+
+### 1. **监控 Consumer Lag**
+
+Consumer Lag 是衡量 Kafka 消费是否及时的关键指标。它表示生产者写入的最新消息与消费者已消费的最新消息之间的差距。
+
+#### 方法：
+
+- 使用 Kafka 自带工具 `kafka-consumer-groups.sh` 查看 Consumer Lag：
+  ```bash
+  kafka-consumer-groups.sh --bootstrap-server <broker> --group <consumer-group> --describe
+  ```
+  输出中 `LAG` 列表示未消费的消息数量。如果该值持续增长，说明消费不及时。
+
+- 使用监控工具（如 Prometheus + Grafana）监控 `consumer_lag` 指标。
+
+---
+
+### 2. **监控 Topic 的 Log End Offset**
+
+Log End Offset 是 Kafka 中每个分区的最新消息偏移量。如果消费者的 `Committed Offset` 长期落后于 `Log End Offset`，说明消费不及时。
+
+#### 方法：
+
+- 使用 Kafka 自带工具 `kafka-run-class.sh` 查看分区的 Log End Offset：
+  ```bash
+  kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list <broker> --topic <topic>
+  ```
+  比较 Log End Offset 和消费者的 Committed Offset。
+
+---
+
+### 3. **监控 Broker 的消息堆积**
+
+如果消费不及时，Broker 的消息堆积会增加，可能导致磁盘使用率上升。
+
+#### 方法：
+
+- 查看 Broker 的磁盘使用情况，监控 `log.dirs` 中的磁盘空间。
+- 监控 Kafka 指标 `UnderReplicatedPartitions` 和 `LogEndOffset`.
+
+---
+
+### 4. **分析消费者性能**
+
+- 检查消费者是否有足够的线程或实例来处理分区。
+- 检查消费者是否存在性能瓶颈（如消息处理逻辑过慢）。
+- 确保消费者的 `max.poll.records` 和 `fetch.max.bytes` 配置合理。
+
+---
+
+### 5. **使用 Kafka Manager 或其他工具**
+
+使用 Kafka Manager、Confluent Control Center 或其他 Kafka 管理工具，可以直观地查看 Consumer Lag 和消息堆积情况。
+
+通过以上方法，可以有效判断 Kafka 消费是否不及时并导致数据积累。
