@@ -1,0 +1,73 @@
+" .ideavimrc is a configuration file for IdeaVim plugin. It uses
+"   the same commands as the original .vimrc configuration.
+" You can find a list of commands here: https://jb.gg/h38q75
+" Find more examples here: https://jb.gg/share-ideavimrc
+
+
+"" -- Suggested options --
+" Show a few lines of context around the cursor. Note that this makes the
+" text scroll if you mouse-click near the start or end of the window.
+set scrolloff=5
+
+" Do incremental searching.
+set incsearch
+
+" Don't use Ex mode, use Q for formatting.
+map Q gq
+
+" --- Enable IdeaVim plugins https://jb.gg/ideavim-plugins
+
+" Highlight copied text
+Plug 'machakann/vim-highlightedyank'
+" Commentary plugin
+Plug 'tpope/vim-commentary'
+
+
+"" -- Map IDE actions to IdeaVim -- https://jb.gg/abva4t
+"" Map \r to the Reformat Code action
+"map \r <Action>(ReformatCode)
+
+"" Map <leader>d to start debug
+"map <leader>d <Action>(Debug)
+
+"" Map \b to toggle the breakpoint on the current line
+"map \b <Action>(ToggleLineBreakpoint)
+set clipboard=unnamedplus
+
+
+
+
+
+
+
+set nocompatible            " 关闭兼容模式
+set number                  " 显示行号
+"set relativenumber          " 显示相对行号
+set cursorline              " 高亮当前行
+set showcmd                 " 显示输入命令
+set showmode                " 显示当前模式
+set ruler                   " 显示光标位置
+set wildmenu                " 命令行补全增强
+set incsearch               " 增量搜索
+set ignorecase              " 搜索时忽略大小写
+set smartcase               " 有大写时自动区分大小写
+set hlsearch                " 高亮搜索结果
+set tabstop=4               " Tab宽度4
+set shiftwidth=4            " 缩进宽度4
+set expandtab               " 用空格代替Tab
+set autoindent              " 自动缩进
+set clipboard=unnamedplus   " 共享系统剪贴板
+set scrolloff=5             " 光标上下保留5行
+set mouse=a                 " 启用鼠标
+
+" 快捷键映射
+nnoremap <Space> :noh<CR>   " 空格键清除高亮
+
+" 插件管理（如用vim-plug）
+call plug#begin('~/.vim/plugged')
+Plug 'tpope/vim-commentary'
+Plug 'machakann/vim-highlightedyank'
+Plug 'preservim/nerdtree'
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+call plug#end()
+
